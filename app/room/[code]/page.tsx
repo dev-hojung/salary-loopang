@@ -292,6 +292,7 @@ export default function RoomPage() {
                       rank={i + 1}
                       isMe={p.id === session.id}
                       online
+                      isKing={i === 0 && onlinePlayers.length >= 2}
                     />
                   ))}
                   {offlinePlayers.map((p) => (
