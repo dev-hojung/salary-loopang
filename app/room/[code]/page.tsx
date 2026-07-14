@@ -16,6 +16,7 @@ import BossAlert from '@/components/BossAlert';
 import DailyReset from '@/components/DailyReset';
 import InviteButton from '@/components/InviteButton';
 import Reactions from '@/components/Reactions';
+import HallOfFame from '@/components/HallOfFame';
 
 const HEARTBEAT_MS = 5000;
 const ONLINE_WINDOW_MS = 15000; // 하트비트 3회(15초) 이상 조용하면 '자리비움'
@@ -326,6 +327,7 @@ export default function RoomPage() {
               <BossAlert code={code} meNickname={session.nickname} />
               <SalaryEngine />
               <GameHub />
+              <HallOfFame players={players} />
               <DuelOverlay />
               <Reactions code={code} />
 
