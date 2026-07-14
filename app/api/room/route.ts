@@ -10,12 +10,20 @@ export const dynamic = 'force-dynamic';
 const MAX_CODE_ATTEMPTS = 8;
 const UNIQUE_VIOLATION = '23505';
 
-async function handleCreate(): Promise<NextResponse<CreateRoomResponse | RoomApiError>> {
+const MAX_TITLE_LENGTH = 40;
+
+async function handleCreate(
+  body: Record<string, unknown>,
+): Promise<NextResponse<CreateRoomResponse | RoomApiError>> {
   const supabase = getSupabaseServer();
+
+  // 방 제목: 선택 입력. 공백 제거 후 비면 null, 길면 잘라서 저장.
+  const rawTitle = String(body.title ?? '').trim();
+  const title = rawTitle ? rawTitle.slice(0, MAX_TITLE_LENGTH) : null;
 
   for (let attempt = 0; attempt < MAX_CODE_ATTEMPTS; attempt++) {
     const code = generateRoomCode();
-    const { error } = await supabase.from('rooms').insert({ code });
+    const { error } = await supabase.from('rooms').insert({ code, title });
 
     if (!error) {
       const { error: stateError } = await supabase
@@ -26,7 +34,7 @@ async function handleCreate(): Promise<NextResponse<CreateRoomResponse | RoomApi
         return NextResponse.json<RoomApiError>({ error: stateError.message }, { status: 500 });
       }
 
-      return NextResponse.json<CreateRoomResponse>({ code }, { status: 201 });
+      return NextResponse.json<CreateRoomResponse>({ code, title }, { status: 201 });
     }
 
     if (error.code !== UNIQUE_VIOLATION) {
@@ -96,7 +104,7 @@ export async function POST(req: Request) {
   const action = body?.action;
 
   if (action === 'create') {
-    return handleCreate();
+    return handleCreate(body);
   }
   if (action === 'join') {
     return handleJoin(body);

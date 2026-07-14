@@ -11,6 +11,7 @@ type Busy = 'create' | 'join' | null;
 export default function Home() {
   const router = useRouter();
   const [nickname, setNickname] = useState('');
+  const [title, setTitle] = useState('');
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<Busy>(null);
@@ -46,7 +47,7 @@ export default function Home() {
       const res = await fetch('/api/room', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'create' }),
+        body: JSON.stringify({ action: 'create', title: title.trim() }),
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as RoomApiError | null;
@@ -119,9 +120,25 @@ export default function Home() {
             />
           </div>
 
+          <div className="setrow" style={{ justifyContent: 'space-between' }}>
+            <label htmlFor="room-title">방 제목</label>
+            <input
+              id="room-title"
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              maxLength={40}
+              placeholder="예: 3층 탕비실 루팡단"
+              style={{ flex: 1, marginLeft: 10, textAlign: 'left' }}
+            />
+          </div>
+
           <button className="btn" onClick={handleCreate} disabled={disabled}>
             {busy === 'create' ? '처리 중...' : '🚪 새 방 만들기'}
           </button>
+          <p style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: -6 }}>
+            방 제목은 선택 사항이에요. (코드로 입장할 땐 필요 없음)
+          </p>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '4px 0' }}>
             <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />

@@ -5,8 +5,12 @@
 -- ── 테이블 ────────────────────────────────────────────────
 create table if not exists rooms (
   code       text primary key,
+  title      text,                                   -- 방 제목 (생성 시 입력, 상세 헤더에 표시)
   created_at timestamptz not null default now()
 );
+
+-- 기존 배포 DB 마이그레이션: title 컬럼 추가 (여러 번 실행해도 안전).
+alter table rooms add column if not exists title text;
 
 create table if not exists players (
   id           uuid primary key default gen_random_uuid(),

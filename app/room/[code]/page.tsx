@@ -29,6 +29,9 @@ export default function RoomPage() {
   const [session, setSession] = useState<PlayerSession | null>(null);
   const [sessionChecked, setSessionChecked] = useState(false);
 
+  // 방 제목 (생성 시 입력값). 헤더에 표시.
+  const [roomTitle, setRoomTitle] = useState<string | null>(null);
+
   // 입장 폼
   const [nickname, setNickname] = useState('');
   const [joining, setJoining] = useState(false);
@@ -53,6 +56,22 @@ export default function RoomPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSession(loadPlayerSession(code));
     setSessionChecked(true);
+  }, [code]);
+
+  // 1-b) 방 제목 조회 (anon select 허용). 입장 여부와 무관하게 헤더에 표시.
+  useEffect(() => {
+    let active = true;
+    getSupabaseBrowser()
+      .from('rooms')
+      .select('title')
+      .eq('code', code)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (active && data?.title) setRoomTitle(data.title as string);
+      });
+    return () => {
+      active = false;
+    };
   }, [code]);
 
   // 2) 세션이 있으면: 초기 로드 + 실시간 구독 + 내 하트비트
@@ -175,9 +194,9 @@ export default function RoomPage() {
         <div className="brand">
           <div className="logo">S</div>
           <div>
-            <h1>SMART WORK INSIGHT™</h1>
+            <h1>{roomTitle ?? 'SMART WORK INSIGHT™'}</h1>
             <p>
-              길드 공동 관제 콘솔 · 코드{' '}
+              {roomTitle ? 'SMART WORK INSIGHT™ · 코드 ' : '길드 공동 관제 콘솔 · 코드 '}
               <span className="mono" style={{ color: '#fff', fontWeight: 700 }}>
                 {code}
               </span>
