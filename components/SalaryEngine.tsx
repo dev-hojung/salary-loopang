@@ -2,16 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { earnedNow, perSecond, secondsUntilOffwork, workPhase } from '@/lib/salary';
+import { prodTierLabel, SLACK_AMOUNT, useProductivity } from '@/lib/productivity';
 
 // ===== 프로토타입 그대로 옮긴 데이터 =====
-const PROD_LINES = [
-  '전일 대비 ▼ 측정 불가 수준',
-  '측정 오류 의심',
-  '사실상 휴식 중',
-  '담당자 부재중으로 추정',
-  '곧 0% 도달 예정',
-];
-
 const WORK_ENDINGS = [
   "❌ 결재 라인에서 반려되었습니다. 사유: '왜 이렇게 했어요?'",
   "❌ 처리 완료... 했으나 부장님이 '원래대로 돌려놔'라고 하셨습니다.",
@@ -43,31 +36,40 @@ const MOODS: Mood[] = [
 const EARNED_SUB_WORKING = '오늘 출근하신 순간부터 단 1초도 쉬지 않고 적립되고 있습니다.';
 const EARNED_SUB_AFTER = '오늘치 적립 완료! 칼퇴 시간입니다. 가방 챙기세요.';
 
-// 시(hour) 입력을 0~23 정수로 클램프
-function clampHour(v: number): number {
-  if (Number.isNaN(v)) return 0;
-  return Math.min(23, Math.max(0, Math.floor(v)));
+// 자정 기준 분(0~1439) ↔ "HH:MM" 문자열 (<input type="time"> 연동용).
+function minToTimeStr(min: number): string {
+  const h = String(Math.floor(min / 60)).padStart(2, '0');
+  const m = String(min % 60).padStart(2, '0');
+  return `${h}:${m}`;
+}
+
+function timeStrToMin(v: string): number | null {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(v);
+  if (!match) return null;
+  const h = Number(match[1]);
+  const m = Number(match[2]);
+  if (h > 23 || m > 59) return null;
+  return h * 60 + m;
 }
 
 export default function SalaryEngine() {
+  // 생산성은 ProductivityProvider(단일 소스)에서 가져온다. 자동 하락 없음 — slack() 으로만 내려감.
+  const { prod, slack, lastReason } = useProductivity();
+
   // 1) 실시간 월급 적립
   const [salary, setSalary] = useState<number>(3000000);
   const [earned, setEarned] = useState<number>(0);
   const [perSec, setPerSec] = useState<string>('0.00');
   const [earnedSub, setEarnedSub] = useState<string>(EARNED_SUB_WORKING);
 
-  // 출퇴근 시간 설정 (시 단위, 0~23)
-  const [workStart, setWorkStart] = useState<number>(9);
-  const [workEnd, setWorkEnd] = useState<number>(18);
+  // 출퇴근 시간 설정 (자정 기준 분, 0~1439). 기본 09:00 ~ 18:00.
+  const [workStart, setWorkStart] = useState<number>(9 * 60);
+  const [workEnd, setWorkEnd] = useState<number>(18 * 60);
 
   // 2) 퇴근 카운트다운
   const [clock, setClock] = useState<string>('--:--:--');
   const [clockWarn, setClockWarn] = useState<boolean>(false);
   const [clockLabel, setClockLabel] = useState<string>('정시 퇴근 기준 (18:00)');
-
-  // 3) 생산성 지수
-  const [prod, setProd] = useState<number>(8);
-  const [prodLabel, setProdLabel] = useState<string>(PROD_LINES[0]);
 
   // 4) 열일 버튼
   const [workBtnDisabled, setWorkBtnDisabled] = useState<boolean>(false);
@@ -98,7 +100,7 @@ export default function SalaryEngine() {
 
       const phase = workPhase(now, workStart, workEnd);
       if (phase === 'before')
-        setEarnedSub(`아직 출근 전입니다. ${workStart}시부터 적립이 시작돼요.`);
+        setEarnedSub(`아직 출근 전입니다. ${minToTimeStr(workStart)}부터 적립이 시작돼요.`);
       else if (phase === 'after') setEarnedSub(EARNED_SUB_AFTER);
       else setEarnedSub(EARNED_SUB_WORKING);
     }
@@ -127,22 +129,13 @@ export default function SalaryEngine() {
         setClockLabel('곧 퇴근! 손에 힘 빼세요.');
       } else {
         setClockWarn(false);
-        setClockLabel(`정시 퇴근 기준 (${String(workEnd).padStart(2, '0')}:00)`);
+        setClockLabel(`정시 퇴근 기준 (${minToTimeStr(workEnd)})`);
       }
     }
     tickClock();
     const id = setInterval(tickClock, 1000);
     return () => clearInterval(id);
   }, [workEnd]);
-
-  // 3초마다 생산성 하락 (가만히 있으면 야금야금 떨어짐)
-  useEffect(() => {
-    const id = setInterval(() => {
-      setProd((prev) => Math.max(0, +(prev - Math.random() * 1.2).toFixed(1)));
-      setProdLabel(PROD_LINES[Math.floor(Math.random() * PROD_LINES.length)]);
-    }, 3000);
-    return () => clearInterval(id);
-  }, []);
 
   // 8초마다 부장님 기분 변동
   useEffect(() => {
@@ -163,7 +156,7 @@ export default function SalaryEngine() {
     setWorkResultText('⏳ 진지하게 처리하는 중...');
     setTimeout(() => {
       setWorkResultText(WORK_ENDINGS[Math.floor(Math.random() * WORK_ENDINGS.length)]);
-      setProd((prev) => Math.max(0, prev - 2)); // 열일 버튼 누르면 오히려 생산성 하락 ㅋㅋ
+      slack(SLACK_AMOUNT.work, `열일 시도 → 반려 (생산성 -${SLACK_AMOUNT.work})`); // 열심히 하려다 오히려 하락 ㅋㅋ
       setWorkBtnDisabled(false);
     }, 1400);
   }
@@ -179,6 +172,7 @@ export default function SalaryEngine() {
       const conf = (Math.random() * 9 + 90).toFixed(1);
       setExcuseResultText(pick);
       setExcuseConfidence(conf);
+      slack(SLACK_AMOUNT.excuse, `AI 핑계 생성 (생산성 -${SLACK_AMOUNT.excuse})`);
       setExcuseBtnDisabled(false);
     }, 1200);
   }
@@ -213,7 +207,7 @@ export default function SalaryEngine() {
         <div className="card col4" style={{ animationDelay: '.18s' }}>
           <div className="card-h">
             <span className="t">실시간 생산성 지수</span>
-            <span className="badge red">하락세</span>
+            <span className="badge red">{prodTierLabel(prod)}</span>
           </div>
           <div>
             <span className="gauge-num mono">{prod}</span>
@@ -222,7 +216,9 @@ export default function SalaryEngine() {
           <div className="gbar">
             <i style={{ width: `${Math.max(prod, 2)}%` }} />
           </div>
-          <div className="label">{prodLabel}</div>
+          <div className="label">
+            {lastReason ?? '기능·미니게임을 플레이하면 내려갑니다 · 낮을수록 상위 랭크'}
+          </div>
         </div>
 
         {/* 월급 설정 */}
@@ -231,41 +227,45 @@ export default function SalaryEngine() {
             <span className="t">기준 설정</span>
             <span className="badge warn">기밀</span>
           </div>
-          <div className="setrow">
-            월{' '}
+          <div className="field">
+            <label htmlFor="salary-input">월급 (원)</label>
             <input
+              id="salary-input"
               className="mono"
               type="number"
               value={salary}
               onChange={handleSalaryChange}
-            />{' '}
-            원
+              style={{ textAlign: 'right' }}
+            />
           </div>
-          <div className="setrow" style={{ marginTop: 10 }}>
-            출근{' '}
+          <div className="field">
+            <label htmlFor="work-start">출근 시각</label>
             <input
+              id="work-start"
               className="mono"
-              type="number"
-              min={0}
-              max={23}
-              value={workStart}
-              onChange={(e) => setWorkStart(clampHour(Number(e.target.value)))}
-              style={{ width: 64 }}
-            />{' '}
-            시 · 퇴근{' '}
+              type="time"
+              value={minToTimeStr(workStart)}
+              onChange={(e) => {
+                const min = timeStrToMin(e.target.value);
+                if (min !== null) setWorkStart(min);
+              }}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="work-end">퇴근 시각</label>
             <input
+              id="work-end"
               className="mono"
-              type="number"
-              min={0}
-              max={23}
-              value={workEnd}
-              onChange={(e) => setWorkEnd(clampHour(Number(e.target.value)))}
-              style={{ width: 64 }}
-            />{' '}
-            시
+              type="time"
+              value={minToTimeStr(workEnd)}
+              onChange={(e) => {
+                const min = timeStrToMin(e.target.value);
+                if (min !== null) setWorkEnd(min);
+              }}
+            />
           </div>
           <div className="label" style={{ marginTop: 12 }}>
-            월 209시간(법정근로) 기준 환산 · 설정한 출퇴근 시간대로 적립·카운트다운을 계산합니다. 아무도 안 봐요.
+            월 209시간(법정근로) 기준 환산 · 설정한 출퇴근 시간(분 단위)대로 적립·카운트다운을 계산합니다. 아무도 안 봐요.
           </div>
         </div>
 

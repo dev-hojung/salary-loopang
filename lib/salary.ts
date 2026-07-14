@@ -1,14 +1,15 @@
 // Pure salary/countdown math extracted from the salary-loopang.html prototype.
 // No Date.now() / globals inside — every function takes `now` as an explicit input.
 
-export const WORK_START = 9; // 출근 9시
-export const WORK_END = 18; // 퇴근 18시
+// 출퇴근 시각은 "자정 기준 분(minutes of day, 0~1439)" 으로 표현한다 — 분 단위 설정 지원.
+export const WORK_START = 9 * 60; // 출근 09:00 → 540
+export const WORK_END = 18 * 60; // 퇴근 18:00 → 1080
 export const MONTH_HOURS = 209; // 법정 월 근로시간
 
-/** today at hour `hour`, same Y/M/D as `now`, HH:00:00.000 */
-function todayAt(now: Date, hour: number): Date {
+/** today at `minutesOfDay`(0~1439) since midnight, same Y/M/D as `now`, HH:MM:00.000 */
+function todayAt(now: Date, minutesOfDay: number): Date {
   const d = new Date(now);
-  d.setHours(hour, 0, 0, 0);
+  d.setHours(Math.floor(minutesOfDay / 60), minutesOfDay % 60, 0, 0);
   return d;
 }
 
