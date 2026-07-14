@@ -21,6 +21,8 @@ export type RoomState = {
   room_code: string;
   panic: boolean; // 부장님 경보 상태 (S2)
   panic_by: string | null;
+  last_reset_date: string | null; // 마지막 일일 리셋 날짜(YYYY-MM-DD) (S3)
+  last_king_nick: string | null; // 전날 루팡왕 닉네임(박제) (S3)
   updated_at: string;
 };
 

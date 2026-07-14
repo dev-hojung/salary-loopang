@@ -38,6 +38,8 @@ type ProductivityValue = {
   prod: number;
   /** 생산성을 amount 만큼 낮춘다(0 미만으로는 안 내려감). reason 은 게이지 라벨에 표시. */
   slack: SlackFn;
+  /** 생산성을 100 으로 되돌린다 (일일 리셋 — 새 날 시작). */
+  reset: () => void;
   lastReason: string | null;
 };
 
@@ -60,13 +62,18 @@ export function ProductivityProvider({
     if (reason !== undefined) setLastReason(reason);
   }, []);
 
+  const reset = useCallback(() => {
+    setProd(PROD_MAX);
+    setLastReason('새 날 시작 · 생산성 초기화');
+  }, []);
+
   // 값이 바뀔 때마다 부모(방 하트비트 등)에 알린다.
   useEffect(() => {
     onChange?.(prod);
   }, [prod, onChange]);
 
   return (
-    <ProductivityContext.Provider value={{ prod, slack, lastReason }}>
+    <ProductivityContext.Provider value={{ prod, slack, reset, lastReason }}>
       {children}
     </ProductivityContext.Provider>
   );

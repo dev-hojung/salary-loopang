@@ -35,11 +35,17 @@ alter table players add column if not exists wins   int not null default 0;
 alter table players add column if not exists losses int not null default 0;
 
 create table if not exists room_state (
-  room_code  text primary key references rooms(code) on delete cascade,
-  panic      boolean not null default false,  -- 부장님 경보 상태 (S2)
-  panic_by   text,
-  updated_at timestamptz not null default now()
+  room_code       text primary key references rooms(code) on delete cascade,
+  panic           boolean not null default false,  -- 부장님 경보 상태 (S2)
+  panic_by        text,
+  last_reset_date text,                            -- 마지막 일일 리셋 날짜(YYYY-MM-DD, 로컬) (S3)
+  last_king_nick  text,                            -- 전날 루팡왕 닉네임(박제) (S3)
+  updated_at      timestamptz not null default now()
 );
+
+-- 기존 배포 DB 마이그레이션: 일일 리셋/루팡왕 박제 컬럼 추가 (여러 번 실행해도 안전).
+alter table room_state add column if not exists last_reset_date text;
+alter table room_state add column if not exists last_king_nick  text;
 
 -- ── Realtime publication (Postgres Changes 구독) ──────────
 -- players / room_state 변경을 방 전원에게 자동 push.
