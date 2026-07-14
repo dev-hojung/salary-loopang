@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { earnedNow, perSecond, secondsUntilOffwork, workPhase } from '@/lib/salary';
 import { prodTierLabel, SLACK_AMOUNT, useProductivity } from '@/lib/productivity';
 
@@ -89,6 +89,10 @@ export default function SalaryEngine() {
   // 6) 부장님 기분 예보
   const [mood, setMood] = useState<Mood>(MOODS[0]);
 
+  // 7) 칼퇴 세리머니 — 근무→퇴근 전환 시 1회 축하 (B-3)
+  const [celebrate, setCelebrate] = useState(false);
+  const prevPhaseRef = useRef<'before' | 'working' | 'after' | null>(null);
+
   // ===== 타이머 가동 =====
 
   // 월급은 0.1초마다 갱신 (실시간 느낌). salary가 바뀌면 즉시 재계산.
@@ -103,6 +107,10 @@ export default function SalaryEngine() {
         setEarnedSub(`아직 출근 전입니다. ${minToTimeStr(workStart)}부터 적립이 시작돼요.`);
       else if (phase === 'after') setEarnedSub(EARNED_SUB_AFTER);
       else setEarnedSub(EARNED_SUB_WORKING);
+
+      // 근무 중 → 퇴근으로 넘어가는 '그 순간'에만 세리머니 (앱을 늦게 켠 경우엔 X).
+      if (prevPhaseRef.current === 'working' && phase === 'after') setCelebrate(true);
+      prevPhaseRef.current = phase;
     }
     tickSalary();
     const id = setInterval(tickSalary, 100);
@@ -145,6 +153,13 @@ export default function SalaryEngine() {
     return () => clearInterval(id);
   }, []);
 
+  // 칼퇴 세리머니 자동 종료 (6초)
+  useEffect(() => {
+    if (!celebrate) return;
+    const t = setTimeout(() => setCelebrate(false), 6000);
+    return () => clearTimeout(t);
+  }, [celebrate]);
+
   function handleSalaryChange(e: React.ChangeEvent<HTMLInputElement>) {
     setSalary(Number(e.target.value) || 0);
   }
@@ -179,6 +194,37 @@ export default function SalaryEngine() {
 
   return (
     <>
+      {/* 칼퇴 세리머니 (B-3) */}
+      {celebrate && (
+        <div className="celebrate-overlay" role="dialog" aria-label="칼퇴 축하">
+          <div className="celebrate-confetti" aria-hidden>
+            {Array.from({ length: 28 }).map((_, i) => (
+              <span
+                key={i}
+                className="confetti-piece"
+                style={{
+                  left: `${(i * 37) % 100}%`,
+                  animationDelay: `${(i % 7) * 0.18}s`,
+                  fontSize: 16 + (i % 4) * 6,
+                }}
+              >
+                {['🎉', '🎊', '✨', '🥳', '🍺'][i % 5]}
+              </span>
+            ))}
+          </div>
+          <div className="card celebrate-card" style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 40 }}>🎉</div>
+            <div className="t" style={{ fontSize: 20 }}>칼퇴 시간입니다!</div>
+            <div className="label" style={{ marginTop: 8 }}>
+              오늘도 수고하셨습니다 · 가방 챙기세요 👜
+            </div>
+            <button className="btn" style={{ marginTop: 16 }} onClick={() => setCelebrate(false)}>
+              닫기
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 히어로: 실시간 월급 */}
       <div className="hero" style={{ animationDelay: '.05s' }}>
         <div className="tag">

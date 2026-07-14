@@ -510,3 +510,41 @@ footer b {
     opacity: 0;
   }
 }
+
+/* B-3 칼퇴 세리머니 — 축하 오버레이 + 컨페티 */
+.celebrate-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9997;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 23, 32, 0.35);
+}
+.celebrate-card {
+  max-width: 320px;
+  width: 90%;
+}
+.celebrate-confetti {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.confetti-piece {
+  position: absolute;
+  top: -40px;
+  animation: confetti-fall 2.8s linear infinite;
+}
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-40px) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(360deg);
+    opacity: 0.9;
+  }
+}
