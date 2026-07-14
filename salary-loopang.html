@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMART WORK INSIGHT · 실시간 업무 현황 대시보드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f4;
+    --card:#ffffff;
+    --ink:#16202e;
+    --ink-soft:#5a6878;
+    --line:#dde3ea;
+    --teal:#0d7a72;
+    --teal-soft:#e6f3f1;
+    --red:#d6483b;
+    --amber:#c98a16;
+    --shadow:0 1px 2px rgba(22,32,46,.04),0 8px 24px rgba(22,32,46,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'IBM Plex Sans KR',sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:60px;
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums}
+
+  /* 상단바 */
+  header{
+    background:#16202e;color:#fff;
+    padding:14px 24px;
+    display:flex;align-items:center;justify-content:space-between;
+    gap:16px;flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{
+    width:34px;height:34px;border-radius:8px;
+    background:var(--teal);
+    display:grid;place-items:center;font-weight:700;font-size:15px;
+    box-shadow:0 0 0 3px rgba(13,122,114,.2);
+  }
+  .brand h1{font-size:15px;font-weight:600;letter-spacing:.3px;line-height:1.2}
+  .brand p{font-size:11px;color:#8d9bab;font-weight:300}
+  .live{
+    display:flex;align-items:center;gap:7px;font-size:11px;color:#aeb9c6;
+    background:rgba(255,255,255,.06);padding:6px 12px;border-radius:20px;
+  }
+  .dot{width:7px;height:7px;border-radius:50%;background:#3ddc84;animation:blink 1.4s infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+  .wrap{max-width:1080px;margin:0 auto;padding:24px}
+
+  /* 히어로 카드 */
+  .hero{
+    background:linear-gradient(135deg,#0d7a72 0%,#0b5e58 100%);
+    color:#fff;border-radius:16px;padding:30px 32px;
+    box-shadow:var(--shadow);position:relative;overflow:hidden;
+    opacity:0;animation:rise .6s ease forwards;
+  }
+  .hero::after{
+    content:"";position:absolute;right:-40px;top:-40px;
+    width:220px;height:220px;border-radius:50%;
+    background:rgba(255,255,255,.06);
+  }
+  .hero .tag{
+    font-size:11px;letter-spacing:1.5px;text-transform:uppercase;
+    color:rgba(255,255,255,.7);font-weight:500;margin-bottom:10px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .hero .big{font-size:clamp(40px,9vw,68px);font-weight:700;line-height:1;letter-spacing:-1px}
+  .hero .unit{font-size:22px;font-weight:400;margin-left:4px}
+  .hero .sub{margin-top:14px;font-size:13px;color:rgba(255,255,255,.85);font-weight:300}
+  .hero .rate{
+    margin-top:18px;display:inline-flex;align-items:center;gap:8px;
+    background:rgba(255,255,255,.12);padding:8px 14px;border-radius:10px;
+    font-size:13px;
+  }
+
+  /* 그리드 */
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;margin-top:16px}
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:20px;box-shadow:var(--shadow);
+    opacity:0;animation:rise .6s ease forwards;
+  }
+  .col4{grid-column:span 4}
+  .col6{grid-column:span 6}
+  .col8{grid-column:span 8}
+  .col12{grid-column:span 12}
+  @media(max-width:720px){
+    .col4,.col6,.col8{grid-column:span 12}
+  }
+  .card-h{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:14px;
+  }
+  .card-h .t{font-size:13px;font-weight:600;color:var(--ink)}
+  .card-h .badge{
+    font-size:10px;font-weight:500;color:var(--teal);background:var(--teal-soft);
+    padding:3px 8px;border-radius:6px;letter-spacing:.5px;
+  }
+  .badge.warn{color:var(--amber);background:#fbf2dd}
+  .badge.red{color:var(--red);background:#fbe5e3}
+
+  /* 카운트다운 */
+  .count{font-size:38px;font-weight:700;letter-spacing:1px}
+  .count.warn{color:var(--amber)}
+  .label{font-size:12px;color:var(--ink-soft);margin-top:6px;font-weight:300}
+
+  /* 게이지 */
+  .gauge-num{font-size:38px;font-weight:700;color:var(--red)}
+  .gbar{height:9px;background:#eef1f4;border-radius:6px;margin-top:14px;overflow:hidden}
+  .gbar > i{display:block;height:100%;background:linear-gradient(90deg,#d6483b,#e6764c);border-radius:6px;transition:width .5s ease;width:8%}
+
+  /* 버튼 */
+  .btn{
+    width:100%;border:none;border-radius:10px;padding:13px;
+    font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;
+    background:var(--teal);color:#fff;transition:.2s;letter-spacing:.3px;
+  }
+  .btn:hover{background:#0b6a63}
+  .btn:active{transform:scale(.98)}
+  .btn:disabled{opacity:.6;cursor:wait}
+  .btn.ghost{background:#f3f5f8;color:var(--ink);border:1px solid var(--line)}
+  .btn.ghost:hover{background:#e9edf2}
+  .result{
+    margin-top:14px;padding:14px;border-radius:10px;background:#f7f9fb;
+    border:1px solid var(--line);font-size:14px;line-height:1.55;min-height:48px;
+    display:flex;align-items:center;
+  }
+  .result.empty{color:var(--ink-soft);font-weight:300;font-style:italic}
+  .conf{font-size:11px;color:var(--ink-soft);margin-top:8px;font-weight:300}
+  .conf b{color:var(--teal);font-weight:600}
+
+  /* KPI 차트 */
+  .chart-wrap{position:relative}
+  svg{display:block;width:100%;height:160px}
+  .legend{font-size:11px;color:var(--ink-soft);margin-top:8px;font-weight:300}
+  .legend b{color:var(--red);font-weight:600}
+
+  /* 기분 예보 */
+  .mood{display:flex;align-items:center;gap:16px}
+  .mood .face{font-size:46px}
+  .mood .txt h3{font-size:18px;font-weight:700}
+  .mood .txt p{font-size:12px;color:var(--ink-soft);margin-top:4px;font-weight:300}
+
+  /* 설정 */
+  .setrow{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ink-soft)}
+  .setrow input{
+    font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;
+    border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:130px;
+    color:var(--ink);text-align:right;
+  }
+  .setrow input:focus{outline:none;border-color:var(--teal)}
+
+  footer{
+    text-align:center;font-size:11px;color:#9aa6b3;margin-top:30px;
+    font-weight:300;line-height:1.7;
+  }
+  footer b{font-weight:500;color:#7d8a98}
+
+  @keyframes rise{to{opacity:1;transform:translateY(0)}}
+  .card,.hero{transform:translateY(12px)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo">S</div>
+    <div>
+      <h1>SMART WORK INSIGHT™</h1>
+      <p>전사 실시간 업무 생산성 통합 관제 시스템</p>
+    </div>
+  </div>
+  <div class="live"><span class="dot"></span> 실시간 연동 중 · 자동 갱신</div>
+</header>
+
+<div class="wrap">
+
+  <!-- 히어로: 실시간 월급 -->
+  <div class="hero" style="animation-delay:.05s">
+    <div class="tag"><span class="dot"></span> 금일 누적 노동 대가 (실시간)</div>
+    <div><span class="big mono" id="earned">0</span><span class="unit">원</span></div>
+    <div class="sub" id="earnedSub">오늘 출근하신 순간부터 단 1초도 쉬지 않고 적립되고 있습니다.</div>
+    <div class="rate mono">⏱ 초당 <span id="perSec">0</span>원씩 입금 중</div>
+  </div>
+
+  <div class="grid">
+
+    <!-- 퇴근 카운트다운 -->
+    <div class="card col4" style="animation-delay:.12s">
+      <div class="card-h"><span class="t">퇴근까지 남은 시간</span><span class="badge">D-DAY</span></div>
+      <div class="count mono" id="clock">--:--:--</div>
+      <div class="label" id="clockLabel">정시 퇴근 기준 (18:00)</div>
+    </div>
+
+    <!-- 생산성 지수 -->
+    <div class="card col4" style="animation-delay:.18s">
+      <div class="card-h"><span class="t">실시간 생산성 지수</span><span class="badge red">하락세</span></div>
+      <div><span class="gauge-num mono" id="prod">8</span><span style="font-size:18px;color:var(--ink-soft)">%</span></div>
+      <div class="gbar"><i id="prodBar"></i></div>
+      <div class="label" id="prodLabel">전일 대비 ▼ 측정 불가 수준</div>
+    </div>
+
+    <!-- 월급 설정 -->
+    <div class="card col4" style="animation-delay:.24s">
+      <div class="card-h"><span class="t">기준 월급 설정</span><span class="badge warn">기밀</span></div>
+      <div class="setrow">
+        월 <input id="salary" class="mono" type="number" value="3000000"> 원
+      </div>
+      <div class="label" style="margin-top:12px">월 209시간(법정근로) 기준으로 환산합니다. 아무도 안 봐요.</div>
+    </div>
+
+    <!-- 열일 모드 버튼 -->
+    <div class="card col6" style="animation-delay:.30s">
+      <div class="card-h"><span class="t">원클릭 열일 처리 시스템</span><span class="badge">엔터프라이즈</span></div>
+      <button class="btn" id="workBtn">🔥 지금 당장 열심히 일하기</button>
+      <div class="result empty" id="workResult">버튼을 누르면 즉시 업무가 처리됩니다. (책임은 안 짐)</div>
+    </div>
+
+    <!-- AI 핑계 생성기 -->
+    <div class="card col6" style="animation-delay:.36s">
+      <div class="card-h"><span class="t">AI 핑계 자동 생성 엔진 v2.4</span><span class="badge">Bedrock 미탑재</span></div>
+      <button class="btn ghost" id="excuseBtn">🤖 상황에 맞는 핑계 생성</button>
+      <div class="result empty" id="excuseResult">버튼을 누르면 정교하게 다듬어진 핑계를 추천해 드립니다.</div>
+    </div>
+
+    <!-- KPI 차트 -->
+    <div class="card col8" style="animation-delay:.42s">
+      <div class="card-h"><span class="t">분기별 핵심성과지표(KPI) 추이</span><span class="badge red">검토 요망</span></div>
+      <div class="chart-wrap">
+        <svg viewBox="0 0 600 160" preserveAspectRatio="none">
+          <line x1="0" y1="40" x2="600" y2="40" stroke="#eef1f4" stroke-width="1"/>
+          <line x1="0" y1="80" x2="600" y2="80" stroke="#eef1f4" stroke-width="1"/>
+          <line x1="0" y1="120" x2="600" y2="120" stroke="#eef1f4" stroke-width="1"/>
+          <polyline fill="none" stroke="#d6483b" stroke-width="3" stroke-linejoin="round"
+            points="20,30 120,55 220,50 320,90 420,110 520,135 580,150"/>
+          <circle cx="580" cy="150" r="5" fill="#d6483b"/>
+        </svg>
+      </div>
+      <div class="legend">목표 대비 달성률: <b>역대 최저</b> · 담당자 의견: "데이터에 오류가 있는 것 같습니다."</div>
+    </div>
+
+    <!-- 부장님 기분 예보 -->
+    <div class="card col4" style="animation-delay:.48s">
+      <div class="card-h"><span class="t">부장님 기분 예보</span><span class="badge warn">주의보</span></div>
+      <div class="mood">
+        <div class="face" id="moodFace">🌤️</div>
+        <div class="txt">
+          <h3 id="moodText">대체로 흐림</h3>
+          <p id="moodSub">오후 한숨 확률 80%</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    SMART WORK INSIGHT™ v2.4.1 Enterprise Edition · 모든 지표는 실시간이며 아무 의미가 없습니다<br>
+    <b>본 시스템은 어떠한 업무 생산성도 향상시키지 않음을 보증합니다.</b>
+  </footer>
+
+</div>
+
+<script>
+  // ===== 1) 실시간 월급 적립 =====
+  // 핵심 아이디어: "월급 ÷ 한 달 근무 초 = 1초에 버는 돈"을 구한 뒤,
+  // 출근 시각(09:00)부터 지금까지 흐른 시간을 곱해서 보여줍니다.
+  const WORK_START = 9;   // 출근 9시
+  const WORK_END = 18;    // 퇴근 18시
+  const MONTH_HOURS = 209; // 법정 월 근로시간
+
+  const earnedEl = document.getElementById('earned');
+  const perSecEl = document.getElementById('perSec');
+  const earnedSub = document.getElementById('earnedSub');
+  const salaryInput = document.getElementById('salary');
+
+  function perSecond(){
+    const salary = Math.max(0, Number(salaryInput.value) || 0);
+    return salary / (MONTH_HOURS * 3600); // 1초당 버는 돈
+  }
+
+  function tickSalary(){
+    const now = new Date();
+    const start = new Date(now); start.setHours(WORK_START,0,0,0);
+    const end = new Date(now);   end.setHours(WORK_END,0,0,0);
+
+    let worked = (now - start) / 1000;           // 출근 후 흐른 초
+    const totalWork = (end - start) / 1000;       // 하루 총 근무 초
+    worked = Math.min(Math.max(worked,0), totalWork); // 0 ~ 퇴근시간 사이로 제한
+
+    const money = Math.floor(worked * perSecond());
+    earnedEl.textContent = money.toLocaleString('ko-KR');
+    perSecEl.textContent = perSecond().toFixed(2);
+
+    if(now < start) earnedSub.textContent = "아직 출근 전입니다. 9시부터 적립이 시작돼요.";
+    else if(now >= end) earnedSub.textContent = "오늘치 적립 완료! 칼퇴 시간입니다. 가방 챙기세요.";
+    else earnedSub.textContent = "오늘 출근하신 순간부터 단 1초도 쉬지 않고 적립되고 있습니다.";
+  }
+
+  // ===== 2) 퇴근 카운트다운 =====
+  const clockEl = document.getElementById('clock');
+  const clockLabel = document.getElementById('clockLabel');
+  function tickClock(){
+    const now = new Date();
+    const end = new Date(now); end.setHours(WORK_END,0,0,0);
+    let diff = Math.floor((end - now)/1000);
+    if(diff <= 0){
+      clockEl.textContent = "00:00:00";
+      clockEl.classList.add('warn');
+      clockLabel.textContent = "🎉 퇴근! 더 이상 여기 있을 이유가 없습니다.";
+      return;
+    }
+    const h = String(Math.floor(diff/3600)).padStart(2,'0');
+    const m = String(Math.floor(diff%3600/60)).padStart(2,'0');
+    const s = String(diff%60).padStart(2,'0');
+    clockEl.textContent = `${h}:${m}:${s}`;
+    if(diff < 1800){ clockEl.classList.add('warn'); clockLabel.textContent="곧 퇴근! 손에 힘 빼세요."; }
+  }
+
+  // ===== 3) 생산성 지수 (가만히 있으면 야금야금 떨어짐) =====
+  const prodEl = document.getElementById('prod');
+  const prodBar = document.getElementById('prodBar');
+  const prodLabel = document.getElementById('prodLabel');
+  let prod = 8;
+  const prodLines = ["전일 대비 ▼ 측정 불가 수준","측정 오류 의심","사실상 휴식 중","담당자 부재중으로 추정","곧 0% 도달 예정"];
+  function decayProd(){
+    prod = Math.max(0, +(prod - Math.random()*1.2).toFixed(1));
+    prodEl.textContent = prod;
+    prodBar.style.width = Math.max(prod,2) + '%';
+    prodLabel.textContent = prodLines[Math.floor(Math.random()*prodLines.length)];
+  }
+
+  // ===== 4) 열일 버튼 (열심히 일하려 했지만 결국 반려됨) =====
+  const workBtn = document.getElementById('workBtn');
+  const workResult = document.getElementById('workResult');
+  const workEndings = [
+    "❌ 결재 라인에서 반려되었습니다. 사유: '왜 이렇게 했어요?'",
+    "❌ 처리 완료... 했으나 부장님이 '원래대로 돌려놔'라고 하셨습니다.",
+    "⚠️ 업무가 처리되었으나 새로운 업무 3건이 추가되었습니다.",
+    "❌ 열심히 했지만 옆 팀 일이었던 것으로 확인됩니다.",
+    "✅ 처리 완료! ...라고 적었으나 저장 버튼을 안 누르셨습니다."
+  ];
+  workBtn.addEventListener('click', ()=>{
+    workBtn.disabled = true;
+    workResult.className = 'result';
+    workResult.textContent = "⏳ 진지하게 처리하는 중...";
+    setTimeout(()=>{
+      workResult.textContent = workEndings[Math.floor(Math.random()*workEndings.length)];
+      prod = Math.max(0, prod - 2); // 열일 버튼 누르면 오히려 생산성 하락 ㅋㅋ
+      workBtn.disabled = false;
+    }, 1400);
+  });
+
+  // ===== 5) AI 핑계 생성기 =====
+  const excuseBtn = document.getElementById('excuseBtn');
+  const excuseResult = document.getElementById('excuseResult');
+  const excuses = [
+    "“방금 메일 확인했는데, 첨부파일이 안 열려서 IT팀에 문의 넣어뒀습니다.”",
+    "“그 건은 타 부서 회신을 기다리는 중이라 제 선에서 진행이 어려웠습니다.”",
+    "“어제 늦게까지 그 작업하다가 오늘 오전에 마무리하려고 아껴뒀습니다.”",
+    "“서버 이슈가 있어서 데이터가 아직 안 들어왔습니다. (서버는 멀쩡합니다)”",
+    "“우선순위 재조정 차원에서 잠시 홀딩해뒀습니다. 전략적 판단이었습니다.”",
+    "“캘린더에 안 잡혀 있어서 저는 다음 주인 줄 알았습니다.”",
+    "“그거 제가 하는 거였어요…? (진심으로 처음 듣는 표정)”"
+  ];
+  excuseBtn.addEventListener('click', ()=>{
+    excuseBtn.disabled = true;
+    excuseResult.className = 'result';
+    excuseResult.textContent = "🤖 최적의 핑계를 추론하는 중...";
+    setTimeout(()=>{
+      const pick = excuses[Math.floor(Math.random()*excuses.length)];
+      const conf = (Math.random()*9+90).toFixed(1);
+      excuseResult.innerHTML = pick + `<div class="conf">신뢰도 <b>${conf}%</b> · 설득력 ★★★★☆ · 들킬 확률 적당함</div>`;
+      excuseBtn.disabled = false;
+    }, 1200);
+  });
+
+  // ===== 6) 부장님 기분 예보 (가끔 랜덤으로 바뀜) =====
+  const moods = [
+    {f:"🌤️",t:"대체로 흐림",s:"오후 한숨 확률 80%"},
+    {f:"⛈️",t:"천둥번개 동반",s:"회의 소집 임박. 대피 요망"},
+    {f:"🌫️",t:"속을 알 수 없음",s:"표정 판독 불가. 일단 조용히"},
+    {f:"☀️",t:"의외로 맑음",s:"점심 뭐 먹지 물어볼 타이밍"},
+    {f:"🌪️",t:"강풍 주의보",s:"'잠깐 나 좀 볼까?' 발생 확률 상승"}
+  ];
+  const moodFace=document.getElementById('moodFace');
+  const moodText=document.getElementById('moodText');
+  const moodSub=document.getElementById('moodSub');
+  function updateMood(){
+    const m = moods[Math.floor(Math.random()*moods.length)];
+    moodFace.textContent=m.f; moodText.textContent=m.t; moodSub.textContent=m.s;
+  }
+
+  // ===== 타이머 가동 =====
+  tickSalary(); tickClock();
+  setInterval(tickSalary, 100);   // 월급은 0.1초마다 갱신 (실시간 느낌)
+  setInterval(tickClock, 1000);
+  setInterval(decayProd, 3000);   // 3초마다 생산성 하락
+  setInterval(updateMood, 8000);  // 8초마다 부장님 기분 변동
+  salaryInput.addEventListener('input', tickSalary);
+</script>
+</body>
+</html>
