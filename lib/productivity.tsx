@@ -18,12 +18,13 @@ export const PROD_MAX = 100;
 export const PROD_MIN = 0;
 
 // 액션별 생산성 감소폭 (한 곳에서 밸런스 조절). 값이 클수록 빨리 내려감.
+// 100 → 0 까지 한참 걸리도록 완만하게. 너무 빨리 바닥나지 않게 조정.
 export const SLACK_AMOUNT = {
-  work: 0.5, // 열일 버튼
-  excuse: 0.5, // AI 핑계 생성
-  sneaky: 0.7, // 몰래 딴짓
-  coffee: 1, // 커피 브레이크
-  typing: 0.8, // 가짜 열일 타이핑
+  work: 0.3, // 열일 버튼
+  excuse: 0.3, // AI 핑계 생성
+  sneaky: 0.4, // 몰래 딴짓
+  coffee: 0.6, // 커피 브레이크
+  typing: 0.5, // 가짜 열일 타이핑
 } as const;
 
 function clampProd(n: number): number {

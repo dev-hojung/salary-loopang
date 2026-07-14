@@ -4,8 +4,9 @@
 export type DuelGame = 'rps';
 
 // 승/패 보상 (생산성은 내려가기만 — '순수 하락' 규칙 유지, 승점은 별도 트랙)
-export const WIN_SLACK = 8; // 승자 생산성 하락폭
-export const LOSE_SLACK = 1; // 패자 생산성 하락폭(참가상)
+// 미니게임보다는 크지만, 한 판으로 확 떨어지지 않게 완화.
+export const WIN_SLACK = 3; // 승자 생산성 하락폭
+export const LOSE_SLACK = 0.5; // 패자 생산성 하락폭(참가상)
 
 export const CHALLENGE_TIMEOUT_MS = 15000; // 도전 무응답 자동 취소
 
