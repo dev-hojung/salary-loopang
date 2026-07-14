@@ -14,6 +14,8 @@ import { DuelProvider } from '@/components/duel/DuelProvider';
 import DuelOverlay from '@/components/duel/DuelOverlay';
 import BossAlert from '@/components/BossAlert';
 import DailyReset from '@/components/DailyReset';
+import InviteButton from '@/components/InviteButton';
+import Reactions from '@/components/Reactions';
 
 const HEARTBEAT_MS = 5000;
 const ONLINE_WINDOW_MS = 15000; // 하트비트 3회(15초) 이상 조용하면 '자리비움'
@@ -283,7 +285,10 @@ export default function RoomPage() {
               <section style={{ marginBottom: 16 }}>
                 <div className="card-h">
                   <span className="t">메이트 현황</span>
-                  <span className="badge">{onlinePlayers.length}명 접속 중</span>
+                  <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <span className="badge">{onlinePlayers.length}명 접속 중</span>
+                    <InviteButton code={code} />
+                  </span>
                 </div>
                 <DailyReset code={code} players={players} />
                 <div className="grid">
@@ -312,6 +317,7 @@ export default function RoomPage() {
               <SalaryEngine />
               <GameHub />
               <DuelOverlay />
+              <Reactions code={code} />
 
               <footer>
                 SMART WORK INSIGHT™ v2.4.1 Enterprise Edition · 모든 지표는 실시간이며 아무 의미가 없습니다
