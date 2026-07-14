@@ -1,4 +1,6 @@
 import SalaryEngine from '@/components/SalaryEngine';
+import GameHub from '@/components/GameHub';
+import { ProductivityProvider } from '@/lib/productivity';
 
 export default function SoloPage() {
   return (
@@ -17,7 +19,10 @@ export default function SoloPage() {
       </header>
 
       <div className="wrap">
-        <SalaryEngine />
+        <ProductivityProvider>
+          <SalaryEngine />
+          <GameHub />
+        </ProductivityProvider>
 
         <footer>
           SMART WORK INSIGHT™ v2.4.1 Enterprise Edition · 모든 지표는 실시간이며 아무 의미가 없습니다
