@@ -4,6 +4,8 @@
 import { useEffect } from 'react';
 import { useDuel } from '@/components/duel/DuelProvider';
 import RockPaperScissors from '@/components/duel/RockPaperScissors';
+import ClickBattle from '@/components/duel/ClickBattle';
+import { duelRule, WIN_SLACK, LOSE_SLACK } from '@/lib/duel';
 
 const backdrop: React.CSSProperties = {
   position: 'fixed',
@@ -74,7 +76,7 @@ export default function DuelOverlay() {
               {match.opponent.nickname}님의 대결 신청!
             </div>
             <div className="label" style={{ marginTop: 8 }}>
-              가위바위보 3판 2선 · 이기면 생산성 대폭 하락(랭킹 ↑)
+              {duelRule(match.game)} · 이기면 생산성 대폭 하락(랭킹 ↑)
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
               <button className="btn" style={{ flex: 1 }} onClick={accept}>
@@ -87,9 +89,13 @@ export default function DuelOverlay() {
           </>
         )}
 
-        {match.phase === 'playing' && match.game === 'rps' && (
+        {match.phase === 'playing' && (
           <>
-            <RockPaperScissors key={match.matchId} />
+            {match.game === 'click' ? (
+              <ClickBattle key={match.matchId} />
+            ) : (
+              <RockPaperScissors key={match.matchId} />
+            )}
             <button
               className="btn ghost"
               style={{ marginTop: 16, fontSize: 12, padding: '8px 12px', width: 'auto' }}
@@ -113,8 +119,8 @@ export default function DuelOverlay() {
             </div>
             <div className="label" style={{ marginTop: 10 }}>
               {match.result?.iWon
-                ? '완벽하게 놀아제꼈습니다 · 생산성 -8, 1승'
-                : '아쉽... 생산성 -1, 1패'}
+                ? `완벽하게 놀아제꼈습니다 · 생산성 -${WIN_SLACK}, 1승`
+                : `아쉽... 생산성 -${LOSE_SLACK}, 1패`}
             </div>
             <button className="btn" style={{ marginTop: 16 }} onClick={close}>
               닫기

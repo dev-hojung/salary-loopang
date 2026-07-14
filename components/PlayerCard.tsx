@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import type { Player } from '@/lib/types';
 import { prodTierLabel } from '@/lib/productivity';
 import { useDuel } from '@/components/duel/DuelProvider';
+import { DUEL_GAMES } from '@/lib/duel';
 
 type PlayerCardProps = {
   player: Player;
@@ -40,6 +42,7 @@ export default function PlayerCard({
   isKing = false,
 }: PlayerCardProps) {
   const { challenge, busy } = useDuel();
+  const [picking, setPicking] = useState(false);
   const initial = player.nickname.trim().charAt(0) || '?';
 
   return (
@@ -119,17 +122,42 @@ export default function PlayerCard({
             {player.wins ?? 0}승 {player.losses ?? 0}패
           </b>
         </span>
-        {!isMe && (
-          <button
-            className="btn ghost"
-            style={{ width: 'auto', padding: '6px 12px', fontSize: 12 }}
-            onClick={() => challenge({ id: player.id, nickname: player.nickname })}
-            disabled={busy || !online}
-            title={online ? undefined : '자리비움 상태에는 도전할 수 없어요'}
-          >
-            ⚔ 도전
-          </button>
-        )}
+        {!isMe &&
+          (picking ? (
+            <span style={{ display: 'flex', gap: 6 }}>
+              {DUEL_GAMES.map((g) => (
+                <button
+                  key={g.key}
+                  className="btn"
+                  style={{ width: 'auto', padding: '6px 10px', fontSize: 12 }}
+                  onClick={() => {
+                    challenge({ id: player.id, nickname: player.nickname }, g.key);
+                    setPicking(false);
+                  }}
+                  disabled={busy || !online}
+                >
+                  {g.short}
+                </button>
+              ))}
+              <button
+                className="btn ghost"
+                style={{ width: 'auto', padding: '6px 8px', fontSize: 12 }}
+                onClick={() => setPicking(false)}
+              >
+                ✕
+              </button>
+            </span>
+          ) : (
+            <button
+              className="btn ghost"
+              style={{ width: 'auto', padding: '6px 12px', fontSize: 12 }}
+              onClick={() => setPicking(true)}
+              disabled={busy || !online}
+              title={online ? undefined : '자리비움 상태에는 도전할 수 없어요'}
+            >
+              ⚔ 도전
+            </button>
+          ))}
       </div>
     </div>
   );
