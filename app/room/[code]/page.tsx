@@ -17,6 +17,7 @@ import DailyReset from '@/components/DailyReset';
 import InviteButton from '@/components/InviteButton';
 import Reactions from '@/components/Reactions';
 import HallOfFame from '@/components/HallOfFame';
+import DailyKings from '@/components/DailyKings';
 
 const HEARTBEAT_MS = 5000;
 const ONLINE_WINDOW_MS = 15000; // 하트비트 3회(15초) 이상 조용하면 '자리비움'
@@ -328,6 +329,7 @@ export default function RoomPage() {
               <SalaryEngine />
               <GameHub />
               <HallOfFame players={players} />
+              <DailyKings code={code} />
               <DuelOverlay />
               <Reactions code={code} />
 

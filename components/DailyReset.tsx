@@ -22,12 +22,13 @@ function todayStr(): string {
 }
 
 // 최저 생산성(동률이면 누적 루팡 시간 많은 쪽) = 루팡왕.
-function kingOf(players: Player[]): string | null {
+function kingPlayerOf(players: Player[]): Player | null {
   if (players.length === 0) return null;
-  const sorted = [...players].sort(
-    (a, b) => a.productivity - b.productivity || b.loopang_sec - a.loopang_sec,
+  return (
+    [...players].sort(
+      (a, b) => a.productivity - b.productivity || b.loopang_sec - a.loopang_sec,
+    )[0] ?? null
   );
-  return sorted[0]?.nickname ?? null;
 }
 
 export default function DailyReset({
@@ -72,7 +73,8 @@ export default function DailyReset({
 
       if (rs.last_reset_date !== today) {
         // 날짜 롤오버 — 전날 루팡왕 박제 + 리셋 선점 (neq 로 한 명만 성공).
-        const king = kingOf(playersRef.current);
+        const kingPlayer = kingPlayerOf(playersRef.current);
+        const king = kingPlayer?.nickname ?? null;
         const { data: won } = await supabase
           .from('room_state')
           .update({ last_reset_date: today, last_king_nick: king })
@@ -81,7 +83,18 @@ export default function DailyReset({
           .select('room_code');
 
         if (won && won.length > 0) {
-          // 내가 선점 → 방 전원 DB 생산성 100 리셋.
+          // 내가 선점 → 방금 끝난 날(rs.last_reset_date)의 루팡왕을 일별 기록에 박제.
+          // daily_records 테이블이 없으면 조용히 무시(마이그레이션 전).
+          await supabase.from('daily_records').upsert(
+            {
+              room_code: code,
+              date: rs.last_reset_date,
+              king_nick: king,
+              king_productivity: kingPlayer ? Math.round(kingPlayer.productivity * 10) / 10 : null,
+            },
+            { onConflict: 'room_code,date' },
+          );
+          // 방 전원 DB 생산성 100 리셋.
           await supabase.from('players').update({ productivity: 100 }).eq('room_code', code);
           setKingNick(king);
           onKing?.(king);

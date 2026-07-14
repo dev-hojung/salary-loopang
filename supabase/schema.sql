@@ -92,3 +92,23 @@ drop policy if exists room_state_select on room_state;
 create policy room_state_select on room_state for select to anon using (true);
 drop policy if exists room_state_update on room_state;
 create policy room_state_update on room_state for update to anon using (true) with check (true);
+
+-- ── 일별 루팡왕 기록 (S4 · B-5b) ──────────────────────────
+-- 일일 리셋 시점에 '방금 끝난 날'의 루팡왕을 한 줄 남긴다. (room_code, date) 당 1행.
+create table if not exists daily_records (
+  room_code         text        not null references rooms(code) on delete cascade,
+  date              text        not null,          -- 종료된 날 (YYYY-MM-DD)
+  king_nick         text,                          -- 그날의 루팡왕 닉네임
+  king_productivity numeric(5,1),                  -- 그날 최저 생산성(=왕의 값)
+  recorded_at       timestamptz not null default now(),
+  primary key (room_code, date)
+);
+
+alter table daily_records enable row level security;
+-- 조회 + 기록(INSERT/UPSERT) 허용 (참여자가 리셋 시 기록).
+drop policy if exists daily_records_select on daily_records;
+create policy daily_records_select on daily_records for select to anon using (true);
+drop policy if exists daily_records_insert on daily_records;
+create policy daily_records_insert on daily_records for insert to anon with check (true);
+drop policy if exists daily_records_update on daily_records;
+create policy daily_records_update on daily_records for update to anon using (true) with check (true);
