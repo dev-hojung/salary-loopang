@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "루팡 길드",
+  title: "딴짓메이트",
   description: "월급루팡 대시보드",
 };
 

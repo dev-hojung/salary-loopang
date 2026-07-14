@@ -97,7 +97,7 @@ export default function Home() {
     <div className="wrap" style={{ display: 'flex', justifyContent: 'center' }}>
       <div style={{ maxWidth: 400, width: '100%', display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div style={{ textAlign: 'center' }}>
-          <h1 style={{ fontSize: 28, fontWeight: 700 }}>루팡 길드 🕵️</h1>
+          <h1 style={{ fontSize: 28, fontWeight: 700 }}>딴짓메이트 🕵️</h1>
           <p style={{ marginTop: 6, fontSize: 13, fontWeight: 300, color: 'var(--ink-soft)' }}>
             부장님 몰래, 다 같이 루팡하는 시간을 재보자
           </p>
