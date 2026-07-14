@@ -30,7 +30,15 @@ function kingOf(players: Player[]): string | null {
   return sorted[0]?.nickname ?? null;
 }
 
-export default function DailyReset({ code, players }: { code: string; players: Player[] }) {
+export default function DailyReset({
+  code,
+  players,
+  onKing,
+}: {
+  code: string;
+  players: Player[];
+  onKing?: (nick: string | null) => void;
+}) {
   const { reset } = useProductivity();
   const [kingNick, setKingNick] = useState<string | null>(null);
 
@@ -48,6 +56,7 @@ export default function DailyReset({ code, players }: { code: string; players: P
     async function evaluate(rs: ResetFields) {
       if (!active) return;
       setKingNick(rs.last_king_nick ?? null);
+      onKing?.(rs.last_king_nick ?? null);
       const today = todayStr();
 
       // 최초(null): 점수 리셋 없이 오늘을 baseline 으로만 기록.
@@ -75,6 +84,7 @@ export default function DailyReset({ code, players }: { code: string; players: P
           // 내가 선점 → 방 전원 DB 생산성 100 리셋.
           await supabase.from('players').update({ productivity: 100 }).eq('room_code', code);
           setKingNick(king);
+          onKing?.(king);
         }
 
         // 내 로컬 생산성도 리셋 (하트비트가 100 을 DB 에 반영).
@@ -126,7 +136,7 @@ export default function DailyReset({ code, players }: { code: string; players: P
       clearInterval(tick);
       supabase.removeChannel(channel);
     };
-  }, [code, reset]);
+  }, [code, reset, onKing]);
 
   if (!kingNick) return null;
   return (

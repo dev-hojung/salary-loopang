@@ -3,6 +3,7 @@ import type { Player } from '@/lib/types';
 import { prodTierLabel } from '@/lib/productivity';
 import { useDuel } from '@/components/duel/DuelProvider';
 import { DUEL_GAMES } from '@/lib/duel';
+import { evaluateAchievements, representativeTitle, RARITY_COLOR } from '@/lib/achievements';
 
 type PlayerCardProps = {
   player: Player;
@@ -10,6 +11,7 @@ type PlayerCardProps = {
   isMe?: boolean;
   online?: boolean; // last_seen 기준 접속 여부. false 면 흐리게 + "자리비움".
   isKing?: boolean; // 접속자 중 1위(최저 생산성) — 루팡왕 👑.
+  yesterdayKing?: string | null; // 어제 루팡왕 닉네임 (업적 판정용).
 };
 
 // 1~3위는 메달, 그 외는 "N위".
@@ -40,10 +42,15 @@ export default function PlayerCard({
   isMe = false,
   online = true,
   isKing = false,
+  yesterdayKing = null,
 }: PlayerCardProps) {
   const { challenge, busy } = useDuel();
   const [picking, setPicking] = useState(false);
   const initial = player.nickname.trim().charAt(0) || '?';
+
+  const achieveCtx = { isYesterdayKing: !!yesterdayKing && player.nickname === yesterdayKing };
+  const title = representativeTitle(player, achieveCtx);
+  const otherBadges = evaluateAchievements(player, achieveCtx).slice(1); // 대표 칭호 제외한 나머지
 
   return (
     <div
@@ -68,7 +75,29 @@ export default function PlayerCard({
         </span>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      {title && (
+        <div style={{ marginTop: 6 }}>
+          <span
+            title={title.desc}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              fontSize: 12,
+              fontWeight: 700,
+              padding: '3px 10px',
+              borderRadius: 999,
+              color: RARITY_COLOR[title.rarity],
+              background: `${RARITY_COLOR[title.rarity]}1a`,
+              border: `1px solid ${RARITY_COLOR[title.rarity]}55`,
+            }}
+          >
+            {title.emoji} {title.label}
+          </span>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12 }}>
         <div
           style={{
             width: 40,
@@ -159,6 +188,27 @@ export default function PlayerCard({
             </button>
           ))}
       </div>
+
+      {otherBadges.length > 0 && (
+        <div style={{ marginTop: 10, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+          {otherBadges.map((a) => (
+            <span
+              key={a.id}
+              title={`${a.label} · ${a.desc}`}
+              style={{
+                fontSize: 13,
+                lineHeight: 1,
+                padding: '3px 6px',
+                borderRadius: 8,
+                background: `${RARITY_COLOR[a.rarity]}1a`,
+                border: `1px solid ${RARITY_COLOR[a.rarity]}44`,
+              }}
+            >
+              {a.emoji}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

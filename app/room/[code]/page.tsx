@@ -43,6 +43,9 @@ export default function RoomPage() {
   // 방 제목 (생성 시 입력값). 헤더에 표시.
   const [roomTitle, setRoomTitle] = useState<string | null>(null);
 
+  // 어제의 루팡왕 (DailyReset 에서 올려줌 — 업적 판정용).
+  const [yesterdayKing, setYesterdayKing] = useState<string | null>(null);
+
   // 입장 폼
   const [nickname, setNickname] = useState('');
   const [joining, setJoining] = useState(false);
@@ -290,7 +293,7 @@ export default function RoomPage() {
                     <InviteButton code={code} />
                   </span>
                 </div>
-                <DailyReset code={code} players={players} />
+                <DailyReset code={code} players={players} onKing={setYesterdayKing} />
                 <div className="grid">
                   {onlinePlayers.map((p, i) => (
                     <PlayerCard
@@ -300,10 +303,17 @@ export default function RoomPage() {
                       isMe={p.id === session.id}
                       online
                       isKing={i === 0 && onlinePlayers.length >= 2}
+                      yesterdayKing={yesterdayKing}
                     />
                   ))}
                   {offlinePlayers.map((p) => (
-                    <PlayerCard key={p.id} player={p} isMe={p.id === session.id} online={false} />
+                    <PlayerCard
+                      key={p.id}
+                      player={p}
+                      isMe={p.id === session.id}
+                      online={false}
+                      yesterdayKing={yesterdayKing}
+                    />
                   ))}
                 </div>
                 {onlinePlayers.length <= 1 && offlinePlayers.length === 0 && (
