@@ -15,12 +15,19 @@ import DuelOverlay from '@/components/duel/DuelOverlay';
 import BossAlert from '@/components/BossAlert';
 
 const HEARTBEAT_MS = 5000;
+const ONLINE_WINDOW_MS = 15000; // 하트비트 3회(15초) 이상 조용하면 '자리비움'
+const STALE_DROP_MS = 10 * 60 * 1000; // 10분 넘게 조용하면 목록에서 제외(사실상 퇴장)
 
 // 랭크 정렬: 생산성 오름차순(낮을수록 = 더 많이 논 사람 = 상위). 동률이면 누적 루팡 시간이 많은 쪽이 위.
 function sortByRank(list: Player[]): Player[] {
   return [...list].sort(
     (a, b) => a.productivity - b.productivity || b.loopang_sec - a.loopang_sec,
   );
+}
+
+function lastSeenMs(p: Player): number {
+  const t = Date.parse(p.last_seen);
+  return Number.isNaN(t) ? 0 : t;
 }
 
 export default function RoomPage() {
@@ -40,6 +47,9 @@ export default function RoomPage() {
 
   // 방 현황
   const [players, setPlayers] = useState<Player[]>([]);
+
+  // last_seen 신선도 재평가용 시계 (5초마다 tick). 0 = 첫 페인트(전원 온라인 간주 → 하이드레이션 안전).
+  const [now, setNow] = useState(0);
 
   // 내 누적 루팡 시간 / 생산성은 서버 라운드트립 없이 로컬에서 누적 후 주기적으로 반영.
   const loopangSecRef = useRef(0);
@@ -74,6 +84,13 @@ export default function RoomPage() {
       active = false;
     };
   }, [code]);
+
+  // 1-c) last_seen 신선도 재평가 시계. 데이터 변경 없이도 5초마다 온라인/자리비움을 다시 계산.
+  useEffect(() => {
+    setNow(Date.now());
+    const id = setInterval(() => setNow(Date.now()), 5000);
+    return () => clearInterval(id);
+  }, []);
 
   // 2) 세션이 있으면: 초기 로드 + 실시간 구독 + 내 하트비트
   useEffect(() => {
@@ -189,6 +206,13 @@ export default function RoomPage() {
     }
   }
 
+  // last_seen 기준 온라인/자리비움 분리. now===0(첫 페인트)엔 전원 온라인 간주.
+  const isFresh = (p: Player) => now === 0 || now - lastSeenMs(p) < STALE_DROP_MS;
+  const isOnline = (p: Player) => now === 0 || now - lastSeenMs(p) < ONLINE_WINDOW_MS;
+  const visiblePlayers = players.filter(isFresh);
+  const onlinePlayers = visiblePlayers.filter(isOnline);
+  const offlinePlayers = visiblePlayers.filter((p) => !isOnline(p));
+
   return (
     <>
       <header>
@@ -197,7 +221,7 @@ export default function RoomPage() {
           <div>
             <h1>{roomTitle ?? 'SMART WORK INSIGHT™'}</h1>
             <p>
-              {roomTitle ? 'SMART WORK INSIGHT™ · 코드 ' : '길드 공동 관제 콘솔 · 코드 '}
+              {roomTitle ? 'SMART WORK INSIGHT™ · 코드 ' : '메이트 공동 관제 콘솔 · 코드 '}
               <span className="mono" style={{ color: '#fff', fontWeight: 700 }}>
                 {code}
               </span>
@@ -215,7 +239,7 @@ export default function RoomPage() {
         {sessionChecked && !session && (
           <div className="card" style={{ maxWidth: 380, margin: '48px auto', textAlign: 'center' }}>
             <div className="card-h" style={{ justifyContent: 'center' }}>
-              <span className="t">길드 입장 · 코드 {code}</span>
+              <span className="t">메이트 입장 · 코드 {code}</span>
             </div>
             <form
               onSubmit={handleJoin}
@@ -257,20 +281,24 @@ export default function RoomPage() {
             <DuelProvider code={code} meId={session.id} meNickname={session.nickname}>
               <section style={{ marginBottom: 16 }}>
                 <div className="card-h">
-                  <span className="t">길드원 현황</span>
-                  <span className="badge">{players.length}명 접속 중</span>
+                  <span className="t">메이트 현황</span>
+                  <span className="badge">{onlinePlayers.length}명 접속 중</span>
                 </div>
                 <div className="grid">
-                  {players.map((p, i) => (
+                  {onlinePlayers.map((p, i) => (
                     <PlayerCard
                       key={p.id}
                       player={p}
                       rank={i + 1}
                       isMe={p.id === session.id}
+                      online
                     />
                   ))}
+                  {offlinePlayers.map((p) => (
+                    <PlayerCard key={p.id} player={p} isMe={p.id === session.id} online={false} />
+                  ))}
                 </div>
-                {players.length === 1 && (
+                {onlinePlayers.length <= 1 && offlinePlayers.length === 0 && (
                   <div className="label" style={{ marginTop: 10 }}>
                     코드 {code} 를 동료에게 공유하세요
                   </div>

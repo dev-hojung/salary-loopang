@@ -6,6 +6,7 @@ type PlayerCardProps = {
   player: Player;
   rank?: number;
   isMe?: boolean;
+  online?: boolean; // last_seen 기준 접속 여부. false 면 흐리게 + "자리비움".
 };
 
 // 1~3위는 메달, 그 외는 "N위".
@@ -30,25 +31,26 @@ function formatLoopang(sec: number): string {
   return parts.join(' ');
 }
 
-export default function PlayerCard({ player, rank, isMe = false }: PlayerCardProps) {
+export default function PlayerCard({ player, rank, isMe = false, online = true }: PlayerCardProps) {
   const { challenge, busy } = useDuel();
   const initial = player.nickname.trim().charAt(0) || '?';
 
   return (
     <div
       className="card col4"
-      style={
-        isMe
+      style={{
+        ...(isMe
           ? { borderColor: 'var(--teal)', boxShadow: '0 0 0 2px rgba(13,122,114,.15), var(--shadow)' }
-          : undefined
-      }
+          : {}),
+        ...(online ? {} : { opacity: 0.5 }),
+      }}
     >
       <div className="card-h">
         <span className="t">
           {player.nickname}
           {isMe ? ' (나)' : ''}
         </span>
-        <span className="badge">{rankBadge(rank)}</span>
+        <span className="badge">{online ? rankBadge(rank) : '💤 자리비움'}</span>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -110,7 +112,8 @@ export default function PlayerCard({ player, rank, isMe = false }: PlayerCardPro
             className="btn ghost"
             style={{ width: 'auto', padding: '6px 12px', fontSize: 12 }}
             onClick={() => challenge({ id: player.id, nickname: player.nickname })}
-            disabled={busy}
+            disabled={busy || !online}
+            title={online ? undefined : '자리비움 상태에는 도전할 수 없어요'}
           >
             ⚔ 도전
           </button>
