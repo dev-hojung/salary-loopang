@@ -40,9 +40,14 @@ const MOODS: Mood[] = [
   { f: '🌪️', t: '강풍 주의보', s: "'잠깐 나 좀 볼까?' 발생 확률 상승" },
 ];
 
-const EARNED_SUB_BEFORE = '아직 출근 전입니다. 9시부터 적립이 시작돼요.';
 const EARNED_SUB_WORKING = '오늘 출근하신 순간부터 단 1초도 쉬지 않고 적립되고 있습니다.';
 const EARNED_SUB_AFTER = '오늘치 적립 완료! 칼퇴 시간입니다. 가방 챙기세요.';
+
+// 시(hour) 입력을 0~23 정수로 클램프
+function clampHour(v: number): number {
+  if (Number.isNaN(v)) return 0;
+  return Math.min(23, Math.max(0, Math.floor(v)));
+}
 
 export default function SalaryEngine() {
   // 1) 실시간 월급 적립
@@ -50,6 +55,10 @@ export default function SalaryEngine() {
   const [earned, setEarned] = useState<number>(0);
   const [perSec, setPerSec] = useState<string>('0.00');
   const [earnedSub, setEarnedSub] = useState<string>(EARNED_SUB_WORKING);
+
+  // 출퇴근 시간 설정 (시 단위, 0~23)
+  const [workStart, setWorkStart] = useState<number>(9);
+  const [workEnd, setWorkEnd] = useState<number>(18);
 
   // 2) 퇴근 카운트다운
   const [clock, setClock] = useState<string>('--:--:--');
@@ -84,24 +93,25 @@ export default function SalaryEngine() {
   useEffect(() => {
     function tickSalary() {
       const now = new Date();
-      setEarned(earnedNow(now, salary));
+      setEarned(earnedNow(now, salary, workStart, workEnd));
       setPerSec(perSecond(salary).toFixed(2));
 
-      const phase = workPhase(now);
-      if (phase === 'before') setEarnedSub(EARNED_SUB_BEFORE);
+      const phase = workPhase(now, workStart, workEnd);
+      if (phase === 'before')
+        setEarnedSub(`아직 출근 전입니다. ${workStart}시부터 적립이 시작돼요.`);
       else if (phase === 'after') setEarnedSub(EARNED_SUB_AFTER);
       else setEarnedSub(EARNED_SUB_WORKING);
     }
     tickSalary();
     const id = setInterval(tickSalary, 100);
     return () => clearInterval(id);
-  }, [salary]);
+  }, [salary, workStart, workEnd]);
 
   // 퇴근 카운트다운은 1초마다.
   useEffect(() => {
     function tickClock() {
       const now = new Date();
-      const diff = secondsUntilOffwork(now);
+      const diff = secondsUntilOffwork(now, workEnd);
       if (diff <= 0) {
         setClock('00:00:00');
         setClockWarn(true);
@@ -117,13 +127,13 @@ export default function SalaryEngine() {
         setClockLabel('곧 퇴근! 손에 힘 빼세요.');
       } else {
         setClockWarn(false);
-        setClockLabel('정시 퇴근 기준 (18:00)');
+        setClockLabel(`정시 퇴근 기준 (${String(workEnd).padStart(2, '0')}:00)`);
       }
     }
     tickClock();
     const id = setInterval(tickClock, 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [workEnd]);
 
   // 3초마다 생산성 하락 (가만히 있으면 야금야금 떨어짐)
   useEffect(() => {
@@ -218,7 +228,7 @@ export default function SalaryEngine() {
         {/* 월급 설정 */}
         <div className="card col4" style={{ animationDelay: '.24s' }}>
           <div className="card-h">
-            <span className="t">기준 월급 설정</span>
+            <span className="t">기준 설정</span>
             <span className="badge warn">기밀</span>
           </div>
           <div className="setrow">
@@ -231,8 +241,31 @@ export default function SalaryEngine() {
             />{' '}
             원
           </div>
+          <div className="setrow" style={{ marginTop: 10 }}>
+            출근{' '}
+            <input
+              className="mono"
+              type="number"
+              min={0}
+              max={23}
+              value={workStart}
+              onChange={(e) => setWorkStart(clampHour(Number(e.target.value)))}
+              style={{ width: 64 }}
+            />{' '}
+            시 · 퇴근{' '}
+            <input
+              className="mono"
+              type="number"
+              min={0}
+              max={23}
+              value={workEnd}
+              onChange={(e) => setWorkEnd(clampHour(Number(e.target.value)))}
+              style={{ width: 64 }}
+            />{' '}
+            시
+          </div>
           <div className="label" style={{ marginTop: 12 }}>
-            월 209시간(법정근로) 기준으로 환산합니다. 아무도 안 봐요.
+            월 209시간(법정근로) 기준 환산 · 설정한 출퇴근 시간대로 적립·카운트다운을 계산합니다. 아무도 안 봐요.
           </div>
         </div>
 
