@@ -178,6 +178,45 @@ export default function Home() {
 
           {error && <p style={{ color: 'var(--red)', fontSize: 12, fontWeight: 500 }}>{error}</p>}
         </div>
+
+        {/* 사용법 안내 */}
+        <div className="card" style={{ opacity: 1, animation: 'none' }}>
+          <div className="card-h" style={{ marginBottom: 10 }}>
+            <span className="t">🕵️ 이렇게 놀아요</span>
+            <span className="badge red">생산성 낮을수록 랭킹 ↑</span>
+          </div>
+          <ol
+            style={{
+              margin: 0,
+              padding: 0,
+              listStyle: 'none',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 10,
+            }}
+          >
+            {(
+              [
+                ['🚪', '방 만들기 or 코드 입장', '닉네임만 있으면 로그인 없이 바로 시작.'],
+                ['📉', '딴짓할수록 랭킹 ↑', '생산성이 낮을수록 상위! 미니게임(몰래딴짓·커피·가짜 타이핑)으로 열심히 놀기.'],
+                ['🚨', '부장님 뜨면 경보', '“부장님 떴다” 한 번이면 방 전원 화면이 위장 업무 화면으로. 20초 뒤 자동 해제.'],
+                ['⚔️', '1:1 대결', '상대에게 도전(가위바위보·연타). 이기면 생산성 확 하락 → 랭킹 급상승.'],
+                ['👑', '매일 자정 리셋', '생산성 초기화 + 전날 1위는 “루팡왕” 박제. 칭호·업적, 이모지 반응, 칼퇴 축하는 덤.'],
+              ] as const
+            ).map(([emoji, stepTitle, desc], i) => (
+              <li key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                <span style={{ fontSize: 18, lineHeight: 1.3, flexShrink: 0 }}>{emoji}</span>
+                <span style={{ fontSize: 13 }}>
+                  <b style={{ fontWeight: 700 }}>{stepTitle}</b>
+                  <span style={{ display: 'block', color: 'var(--ink-soft)', marginTop: 1 }}>{desc}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+          <p className="label" style={{ marginTop: 12 }}>
+            ※ 모든 지표는 실시간이며 아무 의미가 없습니다. 업무 생산성 향상 효과 없음을 보증합니다.
+          </p>
+        </div>
       </div>
     </div>
   );
