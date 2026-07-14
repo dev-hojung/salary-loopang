@@ -12,6 +12,7 @@ import PlayerCard from '@/components/PlayerCard';
 import { ProductivityProvider } from '@/lib/productivity';
 import { DuelProvider } from '@/components/duel/DuelProvider';
 import DuelOverlay from '@/components/duel/DuelOverlay';
+import BossAlert from '@/components/BossAlert';
 
 const HEARTBEAT_MS = 5000;
 
@@ -276,6 +277,7 @@ export default function RoomPage() {
                 )}
               </section>
 
+              <BossAlert code={code} meNickname={session.nickname} />
               <SalaryEngine />
               <GameHub />
               <DuelOverlay />
