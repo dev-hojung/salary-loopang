@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { useParams } from 'next/navigation';
-import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { getSupabaseBrowser } from '@/lib/supabaseClient';
 import { loadPlayerSession, savePlayerSession, type PlayerSession } from '@/lib/session';
 import type { JoinRoomResponse, Player, RoomApiError } from '@/lib/types';
@@ -107,7 +106,7 @@ export default function RoomPage() {
 
     let active = true;
     const supabase = getSupabaseBrowser();
-    const channel = supabase.channel(`room:${code}`);
+    const channel = supabase.channel(`room-live:${code}`);
     let heartbeatId: ReturnType<typeof setInterval> | null = null;
 
     async function init() {
@@ -129,24 +128,18 @@ export default function RoomPage() {
       setMyProd0(startProd);
 
       channel
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'players', filter: `room_code=eq.${code}` },
-          (payload: RealtimePostgresChangesPayload<Player>) => {
-            setPlayers((prev) => {
-              if (payload.eventType === 'DELETE') {
-                const removedId = payload.old.id;
-                return prev.filter((p) => p.id !== removedId);
-              }
-              const row = payload.new;
-              const exists = prev.some((p) => p.id === row.id);
-              const next = exists
-                ? prev.map((p) => (p.id === row.id ? row : p))
-                : [...prev, row];
-              return sortByRank(next);
-            });
-          },
-        )
+        .on('broadcast', { event: 'player' }, ({ payload }) => {
+          // 서버가 mutation(하트비트/입장/대결) 후 push 한 authoritative player row 를 반영.
+          const row = payload as Player;
+          setPlayers((prev) => {
+            const exists = prev.some((p) => p.id === row.id);
+            const next = exists
+              ? prev.map((p) => (p.id === row.id ? row : p))
+              : [...prev, row];
+            return sortByRank(next);
+          });
+          // 퇴장은 last_seen 기반 stale 필터가 처리(별도 delete 이벤트 불필요).
+        })
         .subscribe();
 
       heartbeatId = setInterval(() => {

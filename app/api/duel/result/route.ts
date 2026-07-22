@@ -8,6 +8,7 @@ import { normalizeRoomCode } from '@/lib/roomCode';
 import { authenticatePlayer } from '@/lib/auth';
 import { apiError, readJsonBody } from '@/lib/apiHelpers';
 import { rateLimit, RATE } from '@/lib/rateLimit';
+import { broadcastToRoom } from '@/lib/realtime';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -75,6 +76,11 @@ export async function POST(req: Request) {
     pending.delete(key);
     const { error } = await supabase.rpc('increment_duel', { winner: winnerId, loser: loserId });
     if (error) return apiError(error.message, 500);
+
+    // 갱신된 전적(승자/패자)을 방에 전파.
+    const { data: updated } = await supabase.from('players').select('*').in('id', [winnerId, loserId]);
+    for (const r of updated ?? []) await broadcastToRoom(code, 'player', r);
+
     return NextResponse.json({ ok: true, status: 'recorded' }, { status: 200 });
   }
 

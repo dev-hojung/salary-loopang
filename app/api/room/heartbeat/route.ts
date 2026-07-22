@@ -7,6 +7,7 @@ import { normalizeRoomCode } from '@/lib/roomCode';
 import { authenticatePlayer } from '@/lib/auth';
 import { apiError, readJsonBody } from '@/lib/apiHelpers';
 import { rateLimit, RATE } from '@/lib/rateLimit';
+import { broadcastToRoom } from '@/lib/realtime';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -47,12 +48,17 @@ export async function POST(req: Request) {
     patch.productivity = Math.round(Math.min(100, Math.max(0, rawProd)) * 10) / 10;
   }
 
-  const { error: updErr } = await supabase
+  const { data: row, error: updErr } = await supabase
     .from('players')
     .update(patch)
     .eq('id', playerId)
-    .eq('room_code', code);
+    .eq('room_code', code)
+    .select('*')
+    .single();
   if (updErr) return apiError(updErr.message, 500);
+
+  // 방 전원에게 authoritative player row 전파 (postgres_changes 대체).
+  if (row) await broadcastToRoom(code, 'player', row);
 
   return NextResponse.json({ ok: true, loopang_sec: loopangSec }, { status: 200 });
 }

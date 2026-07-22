@@ -10,6 +10,7 @@ import {
   hashSecret,
 } from '@/lib/auth';
 import { clientIp, rateLimit, RATE } from '@/lib/rateLimit';
+import { broadcastToRoom } from '@/lib/realtime';
 import type { CreateRoomResponse, JoinRoomResponse, RoomApiError } from '@/lib/types';
 
 export const runtime = 'nodejs';
@@ -106,6 +107,9 @@ async function handleJoin(body: Record<string, unknown>): Promise<
   if (authError) {
     return NextResponse.json<RoomApiError>({ error: authError.message }, { status: 500 });
   }
+
+  // 기존 방 참여자에게 신규 입장자를 즉시 알림 (postgres_changes INSERT 대체).
+  await broadcastToRoom(code, 'player', player);
 
   const res = NextResponse.json<JoinRoomResponse>({ player }, { status: 200 });
   res.cookies.set(authCookieName(code), buildCookieValue(player.id, secret), authCookieOptions());
