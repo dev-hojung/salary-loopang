@@ -1,6 +1,14 @@
+import type { Metadata } from 'next';
 import SalaryEngine from '@/components/SalaryEngine';
 import GameHub from '@/components/GameHub';
 import { ProductivityProvider } from '@/lib/productivity';
+
+export const metadata: Metadata = {
+  title: '혼자 루팡',
+  description:
+    '혼자서도 월급루팡! 실시간 급여 카운터와 미니게임으로 즐기는 딴짓메이트 솔로 모드.',
+  alternates: { canonical: '/solo' },
+};
 
 export default function SoloPage() {
   return (
