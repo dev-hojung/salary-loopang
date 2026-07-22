@@ -53,6 +53,10 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
+  // Google Search Console 사이트 소유 확인 → <meta name="google-site-verification" content="...">
+  verification: {
+    google: "XqlzFmRdBRl35vEl3dQpRaiN6SQZY-svbh5tgDo4tQ4",
+  },
   appleWebApp: {
     capable: true,
     title: SITE_NAME,
