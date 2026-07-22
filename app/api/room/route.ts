@@ -2,6 +2,14 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseServer } from '@/lib/supabaseServer';
 import { generateRoomCode, normalizeRoomCode } from '@/lib/roomCode';
+import {
+  authCookieName,
+  authCookieOptions,
+  buildCookieValue,
+  generateSecret,
+  hashSecret,
+} from '@/lib/auth';
+import { clientIp, rateLimit, RATE } from '@/lib/rateLimit';
 import type { CreateRoomResponse, JoinRoomResponse, RoomApiError } from '@/lib/types';
 
 export const runtime = 'nodejs';
@@ -90,7 +98,18 @@ async function handleJoin(body: Record<string, unknown>): Promise<
     return NextResponse.json<RoomApiError>({ error: insertError.message }, { status: 500 });
   }
 
-  return NextResponse.json<JoinRoomResponse>({ player }, { status: 200 });
+  // 최소 신원: secret 발급 → 해시만 저장(player_auth) → 원문은 httpOnly 쿠키로만 클라에 전달.
+  const secret = generateSecret();
+  const { error: authError } = await supabase
+    .from('player_auth')
+    .insert({ player_id: player.id, secret_hash: hashSecret(secret) });
+  if (authError) {
+    return NextResponse.json<RoomApiError>({ error: authError.message }, { status: 500 });
+  }
+
+  const res = NextResponse.json<JoinRoomResponse>({ player }, { status: 200 });
+  res.cookies.set(authCookieName(code), buildCookieValue(player.id, secret), authCookieOptions());
+  return res;
 }
 
 export async function POST(req: Request) {
@@ -102,11 +121,18 @@ export async function POST(req: Request) {
   }
 
   const action = body?.action;
+  const ip = clientIp(req);
 
   if (action === 'create') {
+    if (!rateLimit(`create:${ip}`, RATE.createRoom)) {
+      return NextResponse.json<RoomApiError>({ error: '요청이 너무 잦습니다' }, { status: 429 });
+    }
     return handleCreate(body);
   }
   if (action === 'join') {
+    if (!rateLimit(`join:${ip}`, RATE.joinRoom)) {
+      return NextResponse.json<RoomApiError>({ error: '요청이 너무 잦습니다' }, { status: 429 });
+    }
     return handleJoin(body);
   }
   return NextResponse.json<RoomApiError>({ error: '알 수 없는 action' }, { status: 400 });

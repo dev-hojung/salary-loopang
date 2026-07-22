@@ -68,9 +68,10 @@ begin
   end if;
 end $$;
 
--- ── RLS (MVP 실용 정책) ───────────────────────────────────
--- 익명 서비스: anon 이 읽고, 참여자 현황/경보 토글을 쓸 수 있게 허용.
--- rooms INSERT 는 서버(service role, RLS 우회) 전용 → 코드 발급 제어.
+-- ── RLS (P0 트랙 A: 서버 권위 write) ──────────────────────
+-- anon 은 '읽기'만 가능(실시간 구독 위해 SELECT 유지). 모든 write(입장·하트비트·경보·대결·리셋·일별기록)는
+-- 서버 라우트(service role, RLS 우회)만 수행 → 남의 방 데이터 변조/그리핑/랭킹 위조 차단.
+-- (읽기 노출(B3)은 P1에서 고빈도 상태를 Broadcast 로 옮기며 마감 예정.)
 alter table rooms      enable row level security;
 alter table players    enable row level security;
 alter table room_state enable row level security;
@@ -79,19 +80,18 @@ alter table room_state enable row level security;
 drop policy if exists rooms_select on rooms;
 create policy rooms_select on rooms for select to anon using (true);
 
--- players: 조회/입장(INSERT)/본인현황 갱신(UPDATE) 허용.
+-- players: 조회(anon)만. 입장(INSERT)·현황 갱신(UPDATE)은 서버 라우트(service role) 전용 (A3).
 drop policy if exists players_select on players;
 create policy players_select on players for select to anon using (true);
+-- A3: anon 직접 write 정책 제거 (입장/하트비트/대결/리셋은 모두 서버 라우트 경유).
 drop policy if exists players_insert on players;
-create policy players_insert on players for insert to anon with check (true);
 drop policy if exists players_update on players;
-create policy players_update on players for update to anon using (true) with check (true);
 
--- room_state: 조회 + 경보 토글(UPDATE) 허용. (S2)
+-- room_state: 조회(anon)만. 경보 토글·일일 리셋은 서버 라우트(service role) 전용 (A3).
 drop policy if exists room_state_select on room_state;
 create policy room_state_select on room_state for select to anon using (true);
+-- A3: anon 직접 UPDATE 정책 제거.
 drop policy if exists room_state_update on room_state;
-create policy room_state_update on room_state for update to anon using (true) with check (true);
 
 -- ── 일별 루팡왕 기록 (S4 · B-5b) ──────────────────────────
 -- 일일 리셋 시점에 '방금 끝난 날'의 루팡왕을 한 줄 남긴다. (room_code, date) 당 1행.
@@ -105,10 +105,35 @@ create table if not exists daily_records (
 );
 
 alter table daily_records enable row level security;
--- 조회 + 기록(INSERT/UPSERT) 허용 (참여자가 리셋 시 기록).
+-- 조회(anon)만. 기록(INSERT/UPSERT)은 서버 리셋 라우트(service role) 전용 (A3).
 drop policy if exists daily_records_select on daily_records;
 create policy daily_records_select on daily_records for select to anon using (true);
+-- A3: anon 직접 write 정책 제거.
 drop policy if exists daily_records_insert on daily_records;
-create policy daily_records_insert on daily_records for insert to anon with check (true);
 drop policy if exists daily_records_update on daily_records;
-create policy daily_records_update on daily_records for update to anon using (true) with check (true);
+
+-- ── 최소 신원 (player_auth) — P0 트랙 A ────────────────────
+-- join 시 서버가 발급한 secret 의 해시만 저장한다. 원문 secret 은 httpOnly 쿠키로만 존재.
+-- 정책을 만들지 않음 → anon 은 select/insert/update 전부 불가. service role(RLS 우회)만 접근한다.
+-- (players 테이블에 넣지 않으므로 anon 의 `select * from players` 로도 secret 이 노출되지 않는다.)
+create table if not exists player_auth (
+  player_id   uuid        primary key references players(id) on delete cascade,
+  secret_hash text        not null,
+  created_at  timestamptz not null default now()
+);
+alter table player_auth enable row level security;
+
+-- ── 대결 전적 원자적 증가 (P0 트랙 A · B7) ────────────────
+-- read-modify-write 경합으로 승수가 유실되지 않도록 단일 문장 증가.
+-- service role(서버 라우트)만 호출한다. anon 에는 execute 권한을 주지 않는다.
+create or replace function increment_duel(winner uuid, loser uuid)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  update players set wins   = wins   + 1 where id = winner;
+  update players set losses = losses + 1 where id = loser;
+$$;
+revoke all on function increment_duel(uuid, uuid) from public, anon;
+grant execute on function increment_duel(uuid, uuid) to service_role;

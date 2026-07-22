@@ -293,11 +293,17 @@ export default function BossAlert({ code, meNickname }: { code: string; meNickna
         setCooling(true);
         setTimeout(() => setCooling(false), COOLDOWN_MS);
       }
-      const { error } = await getSupabaseBrowser()
-        .from('room_state')
-        .update({ panic: next, panic_by: next ? meNickname : null, updated_at: nowIso })
-        .eq('room_code', code);
-      if (error) console.error('경보 갱신 실패', error);
+      // 서버 라우트 경유(신원·방소속 검증 후 service role 로 갱신). panic_by 는 서버가 결정.
+      try {
+        const res = await fetch('/api/room/panic', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, panic: next }),
+        });
+        if (!res.ok) console.error('경보 갱신 실패', res.status);
+      } catch (e) {
+        console.error('경보 갱신 실패', e);
+      }
       setBusy(false);
     },
     [code, meNickname],

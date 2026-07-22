@@ -95,27 +95,23 @@ export function DuelProvider({
     }
   }, []);
 
-  // 본인 대결 전적 갱신 (best-effort — 컬럼 없으면 경고만).
-  const recordResult = useCallback(
-    async (won: boolean) => {
+  // 대결 결과를 서버에 보고 — 양 피어 대조 후 서버가 원자적으로 기록(클라 직접 write 금지, 위조 방지).
+  const reportResult = useCallback(
+    async (winnerId: string) => {
+      const m = matchRef.current;
+      if (!m) return;
+      const loserId = winnerId === meId ? m.opponent.id : meId;
       try {
-        const supabase = getSupabaseBrowser();
-        const col = won ? 'wins' : 'losses';
-        const { data } = await supabase
-          .from('players')
-          .select('wins, losses')
-          .eq('id', meId)
-          .single();
-        const current = (data?.[col] as number | undefined) ?? 0;
-        await supabase
-          .from('players')
-          .update({ [col]: current + 1 })
-          .eq('id', meId);
+        await fetch('/api/duel/result', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, matchId: m.matchId, winnerId, loserId }),
+        });
       } catch (e) {
-        console.warn('대결 전적 저장 실패 (wins/losses 마이그레이션 필요할 수 있음)', e);
+        console.warn('대결 결과 전송 실패', e);
       }
     },
-    [meId],
+    [code, meId],
   );
 
   const finish = useCallback(
@@ -131,9 +127,9 @@ export function DuelProvider({
         won ? `대결 승리 (생산성 -${WIN_SLACK})` : `대결 패배 (생산성 -${LOSE_SLACK})`,
       );
       setMatch({ ...m, phase: 'result', result: { iWon: won, detail } });
-      void recordResult(won);
+      void reportResult(winnerId);
     },
-    [meId, slack, clearChallengeTimeout, setMatch, recordResult],
+    [meId, slack, clearChallengeTimeout, setMatch, reportResult],
   );
 
   // ── 채널 구독 (마운트 1회) ──────────────────────────────

@@ -59,8 +59,7 @@ export default function RoomPage() {
   // last_seen 신선도 재평가용 시계 (5초마다 tick). 0 = 첫 페인트(전원 온라인 간주 → 하이드레이션 안전).
   const [now, setNow] = useState(0);
 
-  // 내 누적 루팡 시간 / 생산성은 서버 라운드트립 없이 로컬에서 누적 후 주기적으로 반영.
-  const loopangSecRef = useRef(0);
+  // 생산성은 SalaryEngine 이 갱신한 값을 하트비트가 서버로 전달한다. (loopang_sec 는 서버가 산출)
   const productivityRef = useRef(100);
   // SalaryEngine 의 실제 생산성이 유일한 소스 — 콜백으로 ref 를 갱신하면 하트비트가 그대로 DB 에 반영한다.
   const handleProdChange = useCallback((prod: number) => {
@@ -124,7 +123,6 @@ export default function RoomPage() {
       setPlayers(list);
 
       const me = list.find((p) => p.id === playerId);
-      loopangSecRef.current = me?.loopang_sec ?? 0;
       const startProd = me?.productivity ?? 100;
       productivityRef.current = startProd;
       setMyProd0(startProd);
@@ -151,20 +149,16 @@ export default function RoomPage() {
         .subscribe();
 
       heartbeatId = setInterval(() => {
-        loopangSecRef.current += HEARTBEAT_MS / 1000;
-        // 생산성은 SalaryEngine 이 갱신한 productivityRef 를 그대로 반영 (여기서 따로 감소시키지 않음).
-
-        supabase
-          .from('players')
-          .update({
-            loopang_sec: loopangSecRef.current,
+        // 서버 권위 하트비트: loopang_sec 는 서버가 시간 델타로 산출하고, 생산성만 전달한다.
+        // 신원은 httpOnly 쿠키(join 시 발급)로 서버가 검증 → 본인 행만 갱신.
+        fetch('/api/room/heartbeat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code,
             productivity: Math.round(productivityRef.current * 10) / 10,
-            last_seen: new Date().toISOString(),
-          })
-          .eq('id', playerId)
-          .then(({ error: updateError }) => {
-            if (updateError) console.error('하트비트 갱신 실패', updateError);
-          });
+          }),
+        }).catch((e) => console.error('하트비트 실패', e));
       }, HEARTBEAT_MS);
     }
 
@@ -295,7 +289,7 @@ export default function RoomPage() {
                     <InviteButton code={code} />
                   </span>
                 </div>
-                <DailyReset code={code} players={players} onKing={setYesterdayKing} />
+                <DailyReset code={code} onKing={setYesterdayKing} />
                 <div className="grid">
                   {onlinePlayers.map((p, i) => (
                     <PlayerCard

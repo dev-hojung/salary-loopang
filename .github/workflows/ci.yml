@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npx tsc --noEmit
+      # lint 은 현재 비차단: 기존 소스(ClickBattle/BossAlert/page 의 react-hooks 규칙 위반 4건)에
+      # lint 부채가 있어, 정리 전까지 CI 를 막지 않도록 continue-on-error 로 둔다. 부채 정리 후 blocking 전환.
+      - name: Lint (non-blocking)
+        run: npm run lint
+        continue-on-error: true
+      - name: Test
+        run: npm test
+      - name: Build
+        run: npm run build
+        env:
+          # 클라이언트는 지연 초기화되고 서버 클라이언트는 런타임에만 생성되므로 빌드엔 실제 키가 불필요.
+          # 값이 없어도 빌드는 통과하지만, 명시적 플레이스홀더로 환경 의존을 없앤다.
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-key
