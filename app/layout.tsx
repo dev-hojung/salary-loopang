@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import "./globals.css";
 import {
   SITE_URL,
@@ -25,6 +26,13 @@ export const metadata: Metadata = {
   keywords: SITE_KEYWORDS,
   applicationName: SITE_NAME,
   category: "games",
+  icons: {
+    icon: [
+      { url: "/icons/192", sizes: "192x192", type: "image/png" },
+      { url: "/icons/512", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/apple", sizes: "180x180", type: "image/png" }],
+  },
   alternates: {
     canonical: "/",
   },
@@ -68,6 +76,11 @@ export const metadata: Metadata = {
   },
 };
 
+// 브라우저 툴바/상태바 색 (Next 16: themeColor 는 viewport 로 이동).
+export const viewport: Viewport = {
+  themeColor: "#0d7a72",
+};
+
 // 구조화 데이터(JSON-LD) — 검색 리치 결과용 WebApplication 스키마.
 const jsonLd = {
   "@context": "https://schema.org",
@@ -105,6 +118,7 @@ export default function RootLayout({
           발생하는 하이드레이션 경고를 방지. 앱 자체 렌더는 결정적이라 안전. */}
       <body suppressHydrationWarning>
         {children}
+        <ServiceWorkerRegister />
         {/* 구조화 데이터: 검색엔진 리치 결과용 (서버 렌더 HTML에 포함) */}
         <script
           type="application/ld+json"
