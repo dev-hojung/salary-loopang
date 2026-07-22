@@ -137,3 +137,17 @@ as $$
 $$;
 revoke all on function increment_duel(uuid, uuid) from public, anon;
 grant execute on function increment_duel(uuid, uuid) to service_role;
+
+-- ── Web Push 구독 (P1 · 재참여 푸시 기반) ─────────────────
+-- 구독 endpoint+keys 저장. 정책 없음 → anon 접근 불가, service role(서버 라우트)만.
+create table if not exists push_subscriptions (
+  id         uuid        primary key default gen_random_uuid(),
+  player_id  uuid        references players(id) on delete cascade,
+  room_code  text        references rooms(code) on delete cascade,
+  endpoint   text        not null unique,
+  p256dh     text        not null,
+  auth       text        not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists push_subscriptions_room_idx on push_subscriptions(room_code);
+alter table push_subscriptions enable row level security;

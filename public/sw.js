@@ -59,3 +59,34 @@ self.addEventListener('fetch', (event) => {
     ),
   );
 });
+
+// 재참여 푸시 수신 → 알림 표시.
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    /* 페이로드 없음/비JSON */
+  }
+  const title = data.title || '딴짓메이트';
+  const options = {
+    body: data.body || '',
+    icon: '/icons/192',
+    badge: '/icons/192',
+    data: { url: data.url || '/' },
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+// 알림 클릭 → 해당 URL 로 포커스/오픈(딥링크).
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = event.notification.data && event.notification.data.url ? event.notification.data.url : '/';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((wins) => {
+      const hit = wins.find((w) => w.url.includes(target));
+      if (hit) return hit.focus();
+      return self.clients.openWindow(target);
+    }),
+  );
+});

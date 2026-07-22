@@ -14,6 +14,7 @@ import DuelOverlay from '@/components/duel/DuelOverlay';
 import BossAlert from '@/components/BossAlert';
 import DailyReset from '@/components/DailyReset';
 import InviteButton from '@/components/InviteButton';
+import PushOptIn from '@/components/PushOptIn';
 import Reactions from '@/components/Reactions';
 import HallOfFame from '@/components/HallOfFame';
 import DailyKings from '@/components/DailyKings';
@@ -281,6 +282,7 @@ export default function RoomPage() {
                   <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <span className="badge">{onlinePlayers.length}명 접속 중</span>
                     <InviteButton code={code} />
+                    <PushOptIn code={code} />
                   </span>
                 </div>
                 <DailyReset code={code} onKing={setYesterdayKing} />
