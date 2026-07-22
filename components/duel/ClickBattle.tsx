@@ -118,7 +118,7 @@ export default function ClickBattle() {
       {phase === 'waiting' && (
         <div style={{ textAlign: 'center', padding: '20px 0' }}>
           <div className="mono" style={{ fontSize: 28, fontWeight: 700 }}>
-            내 기록 {myCountRef.current}회
+            내 기록 {myCount}회
           </div>
           <div className="label" style={{ marginTop: 10 }}>상대 기록을 기다리는 중...</div>
         </div>

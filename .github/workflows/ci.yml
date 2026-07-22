@@ -17,11 +17,8 @@ jobs:
       - run: npm ci
       - name: Typecheck
         run: npx tsc --noEmit
-      # lint 은 현재 비차단: 기존 소스(ClickBattle/BossAlert/page 의 react-hooks 규칙 위반 4건)에
-      # lint 부채가 있어, 정리 전까지 CI 를 막지 않도록 continue-on-error 로 둔다. 부채 정리 후 blocking 전환.
-      - name: Lint (non-blocking)
+      - name: Lint
         run: npm run lint
-        continue-on-error: true
       - name: Test
         run: npm test
       - name: Build

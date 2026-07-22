@@ -94,6 +94,7 @@ export default function RoomPage() {
 
   // 1-c) last_seen 신선도 재평가 시계. 데이터 변경 없이도 5초마다 온라인/자리비움을 다시 계산.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 마운트 후 시계 기동(now=0 sentinel→실제 시각, SSR-safe 의도)
     setNow(Date.now());
     const id = setInterval(() => setNow(Date.now()), 5000);
     return () => clearInterval(id);

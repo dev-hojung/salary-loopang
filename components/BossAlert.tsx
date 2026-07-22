@@ -226,6 +226,7 @@ export default function BossAlert({ code, meNickname }: { code: string; meNickna
   useEffect(() => {
     try {
       const saved = localStorage.getItem(DISGUISE_STORAGE_KEY) as Disguise | null;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 로컬 저장 위장화면 취향 1회 로드
       if (saved && DISGUISES.some((d) => d.key === saved)) setDisguise(saved);
     } catch {
       /* 무시 */
@@ -318,6 +319,7 @@ export default function BossAlert({ code, meNickname }: { code: string; meNickna
   // 카운트다운용 시계 (경보 중에만 250ms tick)
   useEffect(() => {
     if (!panic) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 경보 시작 시 카운트다운 시계 기동
     setNow(Date.now());
     const id = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(id);
