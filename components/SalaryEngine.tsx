@@ -78,11 +78,11 @@ export default function SalaryEngine() {
     '버튼을 누르면 즉시 업무가 처리됩니다. (책임은 안 짐)',
   );
 
-  // 5) AI 핑계 생성기
+  // 5) 핑계 생성기
   const [excuseBtnDisabled, setExcuseBtnDisabled] = useState<boolean>(false);
   const [excuseResultEmpty, setExcuseResultEmpty] = useState<boolean>(true);
   const [excuseResultText, setExcuseResultText] = useState<string>(
-    '버튼을 누르면 정교하게 다듬어진 핑계를 추천해 드립니다.',
+    '버튼을 누르면 그럴듯한 핑계를 하나 뽑아 드립니다. (AI 아님, 그냥 랜덤)',
   );
   const [excuseConfidence, setExcuseConfidence] = useState<string | null>(null);
 
@@ -176,18 +176,18 @@ export default function SalaryEngine() {
     }, 1400);
   }
 
-  // AI 핑계 생성기
+  // 핑계 생성기
   function handleExcuseClick() {
     setExcuseBtnDisabled(true);
     setExcuseResultEmpty(false);
     setExcuseConfidence(null);
-    setExcuseResultText('🤖 최적의 핑계를 추론하는 중...');
+    setExcuseResultText('🎲 핑계 뽑는 중...');
     setTimeout(() => {
       const pick = EXCUSES[Math.floor(Math.random() * EXCUSES.length)];
       const conf = (Math.random() * 9 + 90).toFixed(1);
       setExcuseResultText(pick);
       setExcuseConfidence(conf);
-      slack(SLACK_AMOUNT.excuse, `AI 핑계 생성 (생산성 -${SLACK_AMOUNT.excuse})`);
+      slack(SLACK_AMOUNT.excuse, `핑계 생성 (생산성 -${SLACK_AMOUNT.excuse})`);
       setExcuseBtnDisabled(false);
     }, 1200);
   }
@@ -327,20 +327,20 @@ export default function SalaryEngine() {
           <div className={`result${workResultEmpty ? ' empty' : ''}`}>{workResultText}</div>
         </div>
 
-        {/* AI 핑계 생성기 */}
+        {/* 핑계 생성기 */}
         <div className="card col6" style={{ animationDelay: '.36s' }}>
           <div className="card-h">
-            <span className="t">AI 핑계 자동 생성 엔진 v2.4</span>
-            <span className="badge">Bedrock 미탑재</span>
+            <span className="t">핑계 자동 생성기 v2.4</span>
+            <span className="badge">AI 아님 · 그냥 랜덤</span>
           </div>
           <button className="btn ghost" disabled={excuseBtnDisabled} onClick={handleExcuseClick}>
-            🤖 상황에 맞는 핑계 생성
+            🎲 그럴듯한 핑계 뽑기
           </button>
           <div className={`result${excuseResultEmpty ? ' empty' : ''}`}>
             {excuseResultText}
             {excuseConfidence !== null && (
               <div className="conf">
-                신뢰도 <b>{excuseConfidence}%</b> · 설득력 ★★★★☆ · 들킬 확률 적당함
+                뻔뻔함 <b>{excuseConfidence}%</b> · 설득력 ★★★★☆ · 들킬 확률 적당함
               </div>
             )}
           </div>
