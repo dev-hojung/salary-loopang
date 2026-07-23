@@ -8,9 +8,9 @@ export default function InviteButton({ code }: { code: string }) {
 
   async function invite() {
     const url = `${window.location.origin}/room/${code}`;
-    const text = `딴짓메이트 · 코드 ${code} 로 입장! 부장님 몰래 같이 루팡해요 🕵️`;
+    const text = `🕵️ 딴짓메이트 — 부장님 몰래 다 같이 월급루팡!\n코드 ${code} 로 지금 입장 👉`;
 
-    // 모바일 등 네이티브 공유가 있으면 우선 사용.
+    // 모바일 등 네이티브 공유가 있으면 우선 사용(카톡·메신저로 바로 공유).
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({ title: '딴짓메이트', text, url });
@@ -20,9 +20,9 @@ export default function InviteButton({ code }: { code: string }) {
       }
     }
 
-    // 폴백: 링크 클립보드 복사.
+    // 폴백: 문구 + 링크를 함께 클립보드 복사(붙여넣으면 바로 초대 메시지).
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(`${text} ${url}`);
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch {

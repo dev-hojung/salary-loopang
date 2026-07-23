@@ -309,8 +309,24 @@ export default function RoomPage() {
                   ))}
                 </div>
                 {onlinePlayers.length <= 1 && offlinePlayers.length === 0 && (
-                  <div className="label" style={{ marginTop: 10 }}>
-                    코드 {code} 를 동료에게 공유하세요
+                  <div
+                    className="card"
+                    style={{
+                      marginTop: 10,
+                      textAlign: 'center',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 8,
+                      alignItems: 'center',
+                    }}
+                  >
+                    <div style={{ fontSize: 15, fontWeight: 700 }}>아직 혼자예요 🥲</div>
+                    <div className="label" style={{ lineHeight: 1.6 }}>
+                      부장님 경보·1:1 대결·랭킹은 <b>여럿일수록</b> 재밌어요.
+                      <br />
+                      코드 <b className="mono">{code}</b> 를 동료에게 공유하면 바로 합류!
+                    </div>
+                    <InviteButton code={code} />
                   </div>
                 )}
               </section>

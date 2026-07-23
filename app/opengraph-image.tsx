@@ -1,37 +1,11 @@
 import { ImageResponse } from "next/og";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
+import { loadKoreanFont } from "@/lib/ogFont";
 
 // 소셜 공유(카톡·X·페북) 미리보기 카드 — 코드로 동적 생성.
 export const alt = `${SITE_NAME} — ${SITE_TAGLINE}`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-
-// Google Fonts 에서 한글 폰트(Noto Sans KR)를 텍스트 서브셋으로 받아온다.
-// satori 는 woff2 를 못 읽으므로 구형 User-Agent 로 ttf 를 유도. 실패해도 이미지는 생성됨(폰트 없이).
-async function loadKoreanFont(
-  text: string,
-  weight: number,
-): Promise<ArrayBuffer | null> {
-  try {
-    const cssUrl = `https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@${weight}&text=${encodeURIComponent(text)}`;
-    const cssRes = await fetch(cssUrl, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 6.1; rv:1.0) Gecko/20100101 Firefox/1.0",
-      },
-      cache: "force-cache",
-    });
-    if (!cssRes.ok) return null;
-    const css = await cssRes.text();
-    const url = css.match(/src:\s*url\((https:\/\/[^)]+)\)/)?.[1];
-    if (!url) return null;
-    const fontRes = await fetch(url, { cache: "force-cache" });
-    if (!fontRes.ok) return null;
-    return await fontRes.arrayBuffer();
-  } catch {
-    return null;
-  }
-}
 
 export default async function OpengraphImage() {
   const heading = SITE_NAME;
