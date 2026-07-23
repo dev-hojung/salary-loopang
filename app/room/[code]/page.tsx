@@ -285,7 +285,7 @@ export default function RoomPage() {
                     <PushOptIn code={code} />
                   </span>
                 </div>
-                <DailyReset code={code} onKing={setYesterdayKing} />
+                <DailyReset code={code} meNickname={session.nickname} onKing={setYesterdayKing} />
                 <div className="grid">
                   {onlinePlayers.map((p, i) => (
                     <PlayerCard

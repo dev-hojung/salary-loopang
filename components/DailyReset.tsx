@@ -22,9 +22,11 @@ function todayStr(): string {
 
 export default function DailyReset({
   code,
+  meNickname,
   onKing,
 }: {
   code: string;
+  meNickname?: string;
   onKing?: (nick: string | null) => void;
 }) {
   const { reset } = useProductivity();
@@ -118,9 +120,24 @@ export default function DailyReset({
   }, [code, reset, onKing]);
 
   if (!kingNick) return null;
+  const isMe = !!meNickname && meNickname === kingNick;
   return (
-    <div className="label" style={{ marginTop: 10 }}>
-      <span className="badge">👑 어제의 루팡왕 · {kingNick}</span>
+    <div
+      className="card"
+      style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px' }}
+    >
+      <span style={{ fontSize: 22, flexShrink: 0 }}>👑</span>
+      <div style={{ fontSize: 13 }}>
+        {isMe ? (
+          <>
+            <b>어제의 루팡왕은 당신!</b> 오늘도 왕좌를 지켜낼까요? 🕵️
+          </>
+        ) : (
+          <>
+            어제의 루팡왕 <b>{kingNick}</b> — 오늘은 <b>당신</b>이 도전!
+          </>
+        )}
+      </div>
     </div>
   );
 }
