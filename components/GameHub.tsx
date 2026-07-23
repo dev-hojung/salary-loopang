@@ -4,6 +4,9 @@
 import SneakyClick from '@/components/games/SneakyClick';
 import CoffeeBreak from '@/components/games/CoffeeBreak';
 import FakeTyping from '@/components/games/FakeTyping';
+import BathroomBreak from '@/components/games/BathroomBreak';
+import SlackRoulette from '@/components/games/SlackRoulette';
+import SneakySurf from '@/components/games/SneakySurf';
 
 export default function GameHub() {
   return (
@@ -16,6 +19,9 @@ export default function GameHub() {
         <SneakyClick />
         <CoffeeBreak />
         <FakeTyping />
+        <BathroomBreak />
+        <SlackRoulette />
+        <SneakySurf />
       </div>
     </section>
   );

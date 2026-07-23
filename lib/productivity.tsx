@@ -25,6 +25,9 @@ export const SLACK_AMOUNT = {
   sneaky: 0.4, // 몰래 딴짓
   coffee: 0.6, // 커피 브레이크
   typing: 0.5, // 가짜 열일 타이핑
+  bathroom: 0.6, // 화장실 루팡 (완벽 타이밍 시)
+  roulette: 0.5, // 딴짓 룰렛 (결과 배수에 따라 가감)
+  surf: 0.2, // 몰래 웹서핑 (한 번 볼 때마다 누적)
 } as const;
 
 function clampProd(n: number): number {
