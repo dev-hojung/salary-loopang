@@ -11,6 +11,7 @@ import {
 } from '@/lib/auth';
 import { clientIp, rateLimit, RATE } from '@/lib/rateLimit';
 import { broadcastToRoom } from '@/lib/realtime';
+import { sanitizeText, isBlockedNickname, MAX_ROOM_PLAYERS } from '@/lib/moderation';
 import type { CreateRoomResponse, JoinRoomResponse, RoomApiError } from '@/lib/types';
 
 export const runtime = 'nodejs';
@@ -27,8 +28,8 @@ async function handleCreate(
   const supabase = getSupabaseServer();
 
   // 방 제목: 선택 입력. 공백 제거 후 비면 null, 길면 잘라서 저장.
-  const rawTitle = String(body.title ?? '').trim();
-  const title = rawTitle ? rawTitle.slice(0, MAX_TITLE_LENGTH) : null;
+  const cleanTitle = sanitizeText(String(body.title ?? '')).slice(0, MAX_TITLE_LENGTH);
+  const title = cleanTitle || null;
 
   for (let attempt = 0; attempt < MAX_CODE_ATTEMPTS; attempt++) {
     const code = generateRoomCode();
@@ -66,9 +67,12 @@ async function handleJoin(body: Record<string, unknown>): Promise<
     return NextResponse.json<RoomApiError>({ error: '잘못된 방 코드' }, { status: 400 });
   }
 
-  const nickname = String(body.nickname ?? '').trim();
+  const nickname = sanitizeText(String(body.nickname ?? ''));
   if (nickname.length < 1 || nickname.length > 20) {
     return NextResponse.json<RoomApiError>({ error: '닉네임을 확인해주세요' }, { status: 400 });
+  }
+  if (isBlockedNickname(nickname)) {
+    return NextResponse.json<RoomApiError>({ error: '사용할 수 없는 닉네임입니다' }, { status: 400 });
   }
 
   const supabase = getSupabaseServer();
@@ -86,6 +90,18 @@ async function handleJoin(body: Record<string, unknown>): Promise<
     return NextResponse.json<RoomApiError>(
       { error: '존재하지 않는 방입니다' },
       { status: 404 },
+    );
+  }
+
+  // 방 정원 상한 (스팸·Realtime 팬아웃 방어).
+  const { count } = await supabase
+    .from('players')
+    .select('id', { count: 'exact', head: true })
+    .eq('room_code', code);
+  if ((count ?? 0) >= MAX_ROOM_PLAYERS) {
+    return NextResponse.json<RoomApiError>(
+      { error: `방 정원이 가득 찼어요 (최대 ${MAX_ROOM_PLAYERS}명)` },
+      { status: 403 },
     );
   }
 
