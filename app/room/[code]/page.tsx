@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { useParams } from 'next/navigation';
 import { getSupabaseBrowser } from '@/lib/supabaseClient';
 import { loadPlayerSession, savePlayerSession, type PlayerSession } from '@/lib/session';
+import { track } from '@/lib/analytics';
 import type { JoinRoomResponse, Player, RoomApiError } from '@/lib/types';
 import SalaryEngine from '@/components/SalaryEngine';
 import GameHub from '@/components/GameHub';
@@ -61,6 +62,7 @@ export default function RoomPage() {
 
   // 생산성은 SalaryEngine 이 갱신한 값을 하트비트가 서버로 전달한다. (loopang_sec 는 서버가 산출)
   const productivityRef = useRef(100);
+  const coplayFiredRef = useRef(false); // 2인 도달 1회 계측용
   // SalaryEngine 의 실제 생산성이 유일한 소스 — 콜백으로 ref 를 갱신하면 하트비트가 그대로 DB 에 반영한다.
   const handleProdChange = useCallback((prod: number) => {
     productivityRef.current = prod;
@@ -209,6 +211,15 @@ export default function RoomPage() {
   const visiblePlayers = players.filter(isFresh);
   const onlinePlayers = visiblePlayers.filter(isOnline);
   const offlinePlayers = visiblePlayers.filter((p) => !isOnline(p));
+
+  // 활성(2인+ 함께) 첫 도달 시 1회 계측 (NSM 프록시).
+  const coplayCount = onlinePlayers.length;
+  useEffect(() => {
+    if (!coplayFiredRef.current && coplayCount >= 2) {
+      coplayFiredRef.current = true;
+      track('coplay_reached');
+    }
+  }, [coplayCount]);
 
   return (
     <>

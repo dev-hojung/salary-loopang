@@ -2,11 +2,13 @@
 
 // B-1 · 초대 개선 — 방 링크를 네이티브 공유(모바일) 또는 클립보드 복사.
 import { useState } from 'react';
+import { track } from '@/lib/analytics';
 
 export default function InviteButton({ code }: { code: string }) {
   const [copied, setCopied] = useState(false);
 
   async function invite() {
+    track('invite_share');
     const url = `${window.location.origin}/room/${code}`;
     const text = `🕵️ 딴짓메이트 — 부장님 몰래 다 같이 월급루팡!\n코드 ${code} 로 지금 입장 👉`;
 

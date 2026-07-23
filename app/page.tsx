@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { savePlayerSession } from '@/lib/session';
 import { normalizeRoomCode } from '@/lib/roomCode';
+import { track } from '@/lib/analytics';
 import type { CreateRoomResponse, JoinRoomResponse, RoomApiError } from '@/lib/types';
 
 type Busy = 'create' | 'join' | null;
@@ -58,6 +59,7 @@ export default function Home() {
       const joined = await joinRoom(roomCode, name);
       if (!joined) return;
       savePlayerSession({ id: joined.player.id, nickname: name, room_code: roomCode });
+      track('room_create');
       router.push(`/room/${roomCode}`);
     } catch {
       setError('네트워크 오류가 발생했습니다');
@@ -83,6 +85,7 @@ export default function Home() {
       const joined = await joinRoom(normalized, name);
       if (!joined) return;
       savePlayerSession({ id: joined.player.id, nickname: name, room_code: normalized });
+      track('room_join');
       router.push(`/room/${normalized}`);
     } catch {
       setError('네트워크 오류가 발생했습니다');
